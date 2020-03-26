@@ -32,6 +32,7 @@ class DeeBuilder(QMainWindow):
         self.setCentralWidget(tabs)
 
         self.setWindowTitle(self.title)
+        self.setGeometry(0, 0, 1600, 1080)
 
 
 if __name__ == "__main__":
