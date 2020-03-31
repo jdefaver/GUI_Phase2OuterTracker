@@ -50,7 +50,7 @@ class Geometry(pd.DataFrame):
             to_drop = [col for col in m_to_dtc.columns if '_aggregation' in col]
             m_to_dtc = m_to_dtc.drop(axis = 1, columns = to_drop)
 
-        return cls(m_to_dtc)
+        return cls(m_to_dtc).cleanup().add_radius()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)       
@@ -229,6 +229,8 @@ class Geometry(pd.DataFrame):
         temp["module_phi_deg"] = temp["module_phi_deg"] - 180
         return temp.sort_values(by=['module_phi_deg'])
 
+    def get_by_detid(self, detid):
+        return self.loc[detid]
     
     def list_by_ring(self):
         lists = {ring: self[self["module_ring"] == ring] for ring in sorted(list(self['module_ring'].unique()))}
