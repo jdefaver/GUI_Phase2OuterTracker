@@ -1,22 +1,39 @@
 import os
 import sys
 import datetime
-from sqlalchemy import Column, ForeignKey, Integer, String, Text, DateTime, Boolean
+import random
+from sqlalchemy import Column, ForeignKey, Integer, String, Text, DateTime, Boolean, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy import create_engine
 from sqlalchemy.sql import func
+
+from geometry import Geometry
  
 Base = declarative_base()
 
 class LogEvent(Base):
     __tablename__ = "log_events"
     id = Column(Integer, primary_key=True)
+    module_id = Column(Integer)
     text = Column(String(250), nullable=False)
     time = Column(DateTime(),  default=func.now())
 
     def __repr__(self):
         return f"{self.time}: {self.text}"
+
+class ExternalModule(Base):
+    """
+    Table to hold a mock of the CERN assembly database
+    """
+    __tablename__ = "external_module"
+    id = Column(Integer, primary_key=True)
+    barcode = Column(String(250))
+    location = Column(String(250))
+    # 2S, PS5G or PS10G
+    module_type = Column(String(250))
+    module_thickness = Column(String(250))
+    
 
 class ModuleStatus(Base):
     __tablename__ = "module_status"
@@ -27,10 +44,10 @@ class ModuleStatus(Base):
     opt_status = Column(DateTime())
     tested = Column(DateTime())
     test_status = Column(String(250))
-    module_id = Column(String(250))
+    barcode = Column(String(250))
 
-    def __repr__(self):
-        return f"detid: {self.detid}\nmech. id: {self.module_id}\nscrewed: {self.screwed}\npower: {self.pwr_status}\noptical: {self.opt_status}\ntested: {self.tested}\nresults: {self.test_status}"
+    def __str__(self):
+        return f"detid: {self.detid}\nbarcode: {self.barcode}\nscrewed: {self.screwed}\npower: {self.pwr_status}\noptical: {self.opt_status}\ntested: {self.tested}\nresults: {self.test_status}"
 
 def db_session(infile = 'sqlite:///dee_builder.db'):
     engine = create_engine(infile)
@@ -46,17 +63,56 @@ if __name__ == "__main__":
     engine = create_engine('sqlite:///dee_builder.db')
     Base.metadata.create_all(engine)
 
-    # seed some fake detids
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
 
-    objects = [
-        {"module_id": "1000", "detid": 419697668, "screwed": func.now(), "tested":func.now(), "test_status": "OK"},
-        {"module_id": "1001", "detid": 419697676, "screwed": func.now(), "tested":func.now(), "test_status": "DEAD" },
-        {"module_id": "1002", "detid": 419705860, "screwed": func.now(), "tested":func.now(), "test_status": "OK" },
-        {"module_id": "1003", "detid": 419705868, "screwed": func.now(), "tested":func.now(), "test_status": "OK" },
-        {"module_id": "1004", "detid": 419722244, "screwed": func.now()},
-        {"module_id": "1005", "detid": 419722252, "screwed": func.now()}
-        ]
-    session.add_all([ModuleStatus(**data) for data in objects])
+    # seed fake modules
+    # tedd has 
+    #  * 2792 2S 1.8mm modules
+    #  * 424  2S 4.0mm modules
+    #  * 1408 PS 4.0mm 5G momdules
+    #  * 1312 PS 4.0mm 10G modules
+    locations = ['CERN','Louvain']
+    i = 0
+    s2_18 = [{"barcode": str(i), "module_type": "2S", "location":random.choice(locations), "module_thickness": 1.8} for i in range(2792)]
+    i = 2792
+    s2_40 = [{"barcode": str(i), "module_type": "2S", "location":random.choice(locations), "module_thickness": 4.0} for i in range(i,i+424)]
+    i += 424
+    ps_5g = [{"barcode": str(i), "module_type": "PS5G", "location":random.choice(locations), "module_thickness": 1.8} for i in range(i,i+1408)]
+    i += 1408
+    ps_10g = [{"barcode": str(i), "module_type": "PS10G", "location":random.choice(locations), "module_thickness": 1.8} for i in range(i,i+1312)]
+    modules = s2_18 + s2_40 + ps_5g + ps_10g
+    session.add_all([ExternalModule(**data) for data in modules])
+
+    mfiles = ["ModulesToDTCsNegOuter.csv", "ModulesToDTCsPosOuter.csv"]
+    afiles = ["AggregationPatternsPosOuter.csv", "AggregationPatternsNegOuter.csv"]
+    geo = Geometry.from_csv(mfiles, afiles)
+
+    # get one full dee
+    test_dee_1 = geo.full_selector("+",1,1,"up")
+
+    def random_datetime(start, end):
+        return start + datetime.timedelta(seconds=random.randint(0, int((end - start).total_seconds())))
+
+    def rand_result():
+        picks = ["ok", "faulty", None]
+        weights = [0.5,0.1,0.4]
+        return random.choices(picks,weights=weights,k=1)[0]
+
+    def associate_by_type(module_type, geometry_df, module_list):
+
+        d1 = datetime.datetime.strptime('1/1/2019 1:30 PM', '%m/%d/%Y %I:%M %p')
+        d2 = datetime.datetime.strptime('1/1/2020 4:50 AM', '%m/%d/%Y %I:%M %p')
+
+        detids = geometry_df[geometry_df["type"] == module_type]
+        num = len(detids)
+        barcodes = random.choices([m["barcode"] for m in module_list if m["module_type"] == module_type and m['location'] == 'Louvain'], k = num)
+        return [{"barcode":barcodes.pop(), "detid":detid, "screwed":random_datetime(d1,d2), "test_status":rand_result() } for detid, row in detids.iterrows()]
+
+    detids = associate_by_type("2S",test_dee_1,modules)
+    detids += associate_by_type("PS5G",test_dee_1,modules)
+    detids += associate_by_type("PS10G",test_dee_1,modules)
+
+    session.add_all([ModuleStatus(**data) for data in detids])
+
     session.commit()
