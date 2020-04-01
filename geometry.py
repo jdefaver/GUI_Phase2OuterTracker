@@ -1,5 +1,5 @@
+import re
 import pandas as pd
-
 from copy import deepcopy
 
 class Geometry(pd.DataFrame):
@@ -74,6 +74,7 @@ class Geometry(pd.DataFrame):
             except AttributeError:
                 pass
         
+        temp = temp.rename(columns=lambda key: re.sub(r'(?<!_)(?<!\b)(?<![A-Z])[A-Z]',lambda m: "_"+m.group(0),key))
         return temp.rename(columns=lambda key: key.split("/")[0].lower().strip('_'))
 
     def add_radius(self):
