@@ -34,7 +34,7 @@ class Geometry(pd.DataFrame):
         return Geometry
     
     @classmethod
-    def from_csv(cls, modules_to_dtc_files, aggregation_files = None):
+    def from_csv(cls, modules_to_dtc_files, aggregation_files = None, detids_file = None):
         """
         Build geometry from csv files from
         http://cms-tklayout.web.cern.ch/cms-tklayout/layouts-work/recent-layouts/OT616_IT616/cablingOuter.html
@@ -46,8 +46,15 @@ class Geometry(pd.DataFrame):
         m_to_dtc = pd.concat([pd.read_csv(infile, **import_options) for infile in modules_to_dtc_files])
         if aggregation_files:
             aggregation = pd.concat([pd.read_csv(infile, skiprows = 18, **import_options) for infile in aggregation_files], sort = False)
+            aggregation = aggregation.fillna(method="ffill")
             m_to_dtc = m_to_dtc.join(aggregation, rsuffix='_aggregation')
             to_drop = [col for col in m_to_dtc.columns if '_aggregation' in col]
+            m_to_dtc = m_to_dtc.drop(axis = 1, columns = to_drop)
+
+        if detids_file:
+            detids = pd.read_csv(detids_file, index_col='DetId/i', skipinitialspace = True)
+            m_to_dtc = m_to_dtc.join(detids, rsuffix='_detids')
+            to_drop = [col for col in m_to_dtc.columns if '_detids' in col]
             m_to_dtc = m_to_dtc.drop(axis = 1, columns = to_drop)
 
         return cls(m_to_dtc).cleanup().add_radius()
