@@ -6,18 +6,18 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1115</width>
-    <height>695</height>
+    <width>1590</width>
+    <height>719</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QPushButton" name="pushButton_2">
+  <widget class="QPushButton" name="DonePOS">
    <property name="geometry">
     <rect>
-     <x>621</x>
-     <y>470</y>
+     <x>421</x>
+     <y>491</y>
      <width>89</width>
      <height>25</height>
     </rect>
@@ -30,21 +30,21 @@
      <normaloff>../../Icons/done_black_2048x2048.png</normaloff>../../Icons/done_black_2048x2048.png</iconset>
    </property>
   </widget>
-  <widget class="QListWidget" name="listWidget">
+  <widget class="QListWidget" name="MOD_Opts">
    <property name="geometry">
     <rect>
-     <x>301</x>
-     <y>100</y>
+     <x>101</x>
+     <y>121</y>
      <width>411</width>
      <height>271</height>
     </rect>
    </property>
   </widget>
-  <widget class="QCommandLinkButton" name="commandLinkButton">
+  <widget class="QCommandLinkButton" name="ScanSelectedMOD">
    <property name="geometry">
     <rect>
-     <x>321</x>
-     <y>420</y>
+     <x>121</x>
+     <y>441</y>
      <width>141</width>
      <height>41</height>
     </rect>
@@ -60,11 +60,11 @@
      <normaloff>../../Icons/scan.png</normaloff>../../Icons/scan.png</iconset>
    </property>
   </widget>
-  <widget class="QCommandLinkButton" name="commandLinkButton_5">
+  <widget class="QCommandLinkButton" name="StartPwrGroup">
    <property name="geometry">
     <rect>
-     <x>321</x>
-     <y>540</y>
+     <x>121</x>
+     <y>561</y>
      <width>271</width>
      <height>41</height>
     </rect>
@@ -76,11 +76,11 @@
     <string>Set Power Group</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton">
+  <widget class="QPushButton" name="DoneSCAN">
    <property name="geometry">
     <rect>
-     <x>621</x>
-     <y>430</y>
+     <x>421</x>
+     <y>451</y>
      <width>89</width>
      <height>25</height>
     </rect>
@@ -93,11 +93,11 @@
      <normaloff>../../Icons/done_black_2048x2048.png</normaloff>../../Icons/done_black_2048x2048.png</iconset>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton_4">
+  <widget class="QPushButton" name="DonePWR">
    <property name="geometry">
     <rect>
-     <x>621</x>
-     <y>550</y>
+     <x>421</x>
+     <y>571</y>
      <width>89</width>
      <height>25</height>
     </rect>
@@ -113,8 +113,8 @@
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
-     <x>301</x>
-     <y>60</y>
+     <x>101</x>
+     <y>81</y>
      <width>151</width>
      <height>41</height>
     </rect>
@@ -123,11 +123,11 @@
     <string>    Available Modules:</string>
    </property>
   </widget>
-  <widget class="QCommandLinkButton" name="commandLinkButton_3">
+  <widget class="QCommandLinkButton" name="SetMODonDEE">
    <property name="geometry">
     <rect>
-     <x>321</x>
-     <y>460</y>
+     <x>121</x>
+     <y>481</y>
      <width>271</width>
      <height>41</height>
     </rect>
@@ -139,24 +139,11 @@
     <string>Set Module Location on the Dee</string>
    </property>
   </widget>
-  <widget class="QCommandLinkButton" name="commandLinkButton_2">
+  <widget class="QCommandLinkButton" name="StartOptGroup">
    <property name="geometry">
     <rect>
-     <x>1691</x>
-     <y>630</y>
-     <width>131</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Continue to tests</string>
-   </property>
-  </widget>
-  <widget class="QCommandLinkButton" name="commandLinkButton_4">
-   <property name="geometry">
-    <rect>
-     <x>321</x>
-     <y>500</y>
+     <x>121</x>
+     <y>521</y>
      <width>271</width>
      <height>41</height>
     </rect>
@@ -168,11 +155,11 @@
     <string>Set Optical Group</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton_3">
+  <widget class="QPushButton" name="DoneOPT">
    <property name="geometry">
     <rect>
-     <x>621</x>
-     <y>510</y>
+     <x>421</x>
+     <y>531</y>
      <width>89</width>
      <height>25</height>
     </rect>
@@ -188,8 +175,8 @@
   <widget class="QFrame" name="frame">
    <property name="geometry">
     <rect>
-     <x>300</x>
-     <y>99</y>
+     <x>100</x>
+     <y>120</y>
      <width>411</width>
      <height>271</height>
     </rect>
