@@ -9,13 +9,16 @@ from sqlalchemy import create_engine
 from sqlalchemy.sql import func
 
 from geometry import Geometry
- 
+
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 Base = declarative_base()
 
 class LogEvent(Base):
     __tablename__ = "log_events"
     id = Column(Integer, primary_key=True)
-    module_id = Column(Integer)
+    barcode = Column(Integer)
     text = Column(String(250), nullable=False)
     time = Column(DateTime(),  default=func.now())
 
@@ -33,6 +36,7 @@ class ExternalModule(Base):
     # 2S, PS5G or PS10G
     module_type = Column(String(250))
     module_thickness = Column(String(250))
+    status = relationship("ModuleStatus", uselist=False, back_populates="module")
     
 
 class ModuleStatus(Base):
@@ -44,7 +48,8 @@ class ModuleStatus(Base):
     opt_status = Column(DateTime())
     tested = Column(DateTime())
     test_status = Column(String(250))
-    barcode = Column(String(250))
+    barcode = Column(String(250), ForeignKey('external_module.barcode'))
+    module = relationship("ExternalModule", back_populates="status")
 
     def __str__(self):
         return f"detid: {self.detid}\nbarcode: {self.barcode}\nscrewed: {self.screwed}\npower: {self.pwr_status}\noptical: {self.opt_status}\ntested: {self.tested}\nresults: {self.test_status}"
@@ -86,10 +91,12 @@ if __name__ == "__main__":
 
     mfiles = ["ModulesToDTCsNegOuter.csv", "ModulesToDTCsPosOuter.csv"]
     afiles = ["AggregationPatternsPosOuter.csv", "AggregationPatternsNegOuter.csv"]
-    geo = Geometry.from_csv(mfiles, afiles)
+    dfile = "DetId_modules_list.csv"
+    geo = Geometry.from_csv(mfiles, afiles, dfile)
 
     # get one full dee
     test_dee_1 = geo.full_selector("+",1,1,"up")
+    test_dee_5 = geo.full_selector("+",5,1,"up")
 
     def random_datetime(start, end):
         return start + datetime.timedelta(seconds=random.randint(0, int((end - start).total_seconds())))
@@ -99,19 +106,31 @@ if __name__ == "__main__":
         weights = [0.5,0.1,0.4]
         return random.choices(picks,weights=weights,k=1)[0]
 
-    def associate_by_type(module_type, geometry_df, module_list):
-
+    def associate_by_type(geometry_df, module_list, module_type, module_thickness = None):
+        # FIXME : remove used modules from list
         d1 = datetime.datetime.strptime('1/1/2019 1:30 PM', '%m/%d/%Y %I:%M %p')
         d2 = datetime.datetime.strptime('1/1/2020 4:50 AM', '%m/%d/%Y %I:%M %p')
 
         detids = geometry_df[geometry_df["type"] == module_type]
+        if module_thickness:
+            detids = detids[detids["sensor_spacing_mm"] == module_thickness]
         num = len(detids)
-        barcodes = random.choices([m["barcode"] for m in module_list if m["module_type"] == module_type and m['location'] == 'Louvain'], k = num)
+        logging.debug(f"criteria: {module_type}, {module_thickness}")
+        logging.debug(f"needed: {num}")
+        candidates = [m["barcode"] for m in module_list if m["module_type"] == module_type and m['location'] == 'Louvain']
+        logging.debug(f"candidates: {len(candidates)}")
+        barcodes = random.sample(candidates, num)
         return [{"barcode":barcodes.pop(), "detid":detid, "screwed":random_datetime(d1,d2), "test_status":rand_result() } for detid, row in detids.iterrows()]
 
-    detids = associate_by_type("2S",test_dee_1,modules)
-    detids += associate_by_type("PS5G",test_dee_1,modules)
-    detids += associate_by_type("PS10G",test_dee_1,modules)
+    detids = associate_by_type(test_dee_1, modules, "2S", 1.8)
+    detids += associate_by_type(test_dee_1, modules, "2S", 4.0)
+    detids += associate_by_type(test_dee_1, modules, "PS5G")
+    detids += associate_by_type(test_dee_1, modules, "PS10G")
+
+    detids = associate_by_type(test_dee_5, modules, "2S", 1.8)
+    detids += associate_by_type(test_dee_5, modules, "2S", 4.0)
+    detids += associate_by_type(test_dee_5, modules, "PS5G")
+    detids += associate_by_type(test_dee_5, modules, "PS10G")
 
     session.add_all([ModuleStatus(**data) for data in detids])
 
