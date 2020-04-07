@@ -67,7 +67,18 @@ class ModuleBrowser(QWidget):
         self.module_data.setText(text)
 
     def filter_modules(self):
-        pass
+        modules = self.db_session.query(ExternalModule)
+
+        location = self.ComboBox_MODLocation.currentText()
+        if location != '-':
+            modules = modules.filter(ExternalModule.location == location)
+
+        test_status = self.ComboBox_Status.currentText().lower()
+        if test_status != '-':
+            modules = modules.filter(ExternalModule.status.has(ModuleStatus.test_status == test_status))
+
+        self.fill_table(modules)
+
 
     def update_from_table(self, row, col):
         self.browseMODTab.selectRow(row)
@@ -75,8 +86,12 @@ class ModuleBrowser(QWidget):
         self.show_module_details(barcode)
 
 
-    def fill_table(self, filters=None):
-        for line, module in enumerate(self.db_session.query(ExternalModule).all()):
+    def fill_table(self, modules=None):
+        if modules == None:
+            modules = self.db_session.query(ExternalModule).all()
+
+        self.browseMODTab.setRowCount(0)
+        for line, module in enumerate(modules):
             self.browseMODTab.insertRow(line)
             self.browseMODTab.setItem(line,0,QTableWidgetItem(module.barcode))
             self.browseMODTab.setItem(line,1,QTableWidgetItem(module.module_type))
