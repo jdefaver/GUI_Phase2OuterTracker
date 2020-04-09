@@ -1,4 +1,5 @@
 import re, string
+from PyQt5.QtWebKitWidgets import QWebView
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -20,11 +21,19 @@ class ModuleBrowser(QWidget):
         ui = loadUi('widgets_ui/browse_modules.ui', self) 
         self.ScanMOD.clicked.connect(self.start_scan)
         self.Enter_MODID.setEnabled(False)
+
         self.browseMODTab.setSortingEnabled(True)
-        self.browseMODTab.cellClicked.connect(self.update_from_table)
+        self.browseMODTab.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.browseMODTab.currentCellChanged.connect(self.update_from_table)
+
         self.ComboBox_MODLocation.activated.connect(self.filter_modules)
         self.ComboBox_LastAction.activated.connect(self.filter_modules)
         self.ComboBox_Status.activated.connect(self.filter_modules)
+
+        font = QFont('SansSerif', 10)
+        font.setStyleHint(QFont.TypeWriter)
+        self.module_data.setFont(font)
+
         self.scanning = False
         self.barcode_chars = []
 
@@ -35,7 +44,7 @@ class ModuleBrowser(QWidget):
 
     def start_scan(self):
         self.scanning = True
-        self.Enter_MODID.setText("Scannning...")
+        self.Enter_MODID.setText("Scanning...")
 
     def keyPressEvent(self, event):
         if self.scanning:
@@ -51,17 +60,24 @@ class ModuleBrowser(QWidget):
             event.accept()
 
     def show_module_details(self, barcode):
-        text = f"Data for module {barcode}\n"
-        text += len(text)*"="+"\n"
+
+        def make_title(title_string, underline = "="):
+            return f"\n\n{title_string}\n{underline*len(title_string)}\n"
+
+        text = make_title(f"Data for module {barcode}")
         module = self.db_session.query(ExternalModule).filter(ExternalModule.barcode == barcode).first()
         if module:
             text += "\n"+module.__str__()
             if(module.status):
-                text += "\n\nInstallation status\n============\n"
+                text += make_title("Installation status", "-")
                 text += module.status.__str__()
-                text += "\n\nGeometry data\n============\n"
+                text += make_title("Geometry data", "-")
                 mgeo = self.geometry.loc[module.status.detid]
                 text += f"opical bundle: {mgeo.mfb} on service {mgeo.opt_services_channel}"
+            if(module.logs):
+                text += make_title("Log Entries", "-")
+                for log in module.logs:
+                    text += str(log)+"\n"
         else:
             text += "\nModule not found"
         self.module_data.setText(text)
@@ -77,13 +93,27 @@ class ModuleBrowser(QWidget):
         if test_status != '-':
             modules = modules.filter(ExternalModule.status.has(ModuleStatus.test_status == test_status))
 
+        last_action = self.ComboBox_LastAction.currentText().lower()
+        if last_action != '-':
+            if last_action == 'placement':
+                modules = modules.filter(ExternalModule.status.has(ModuleStatus.screwed != None), ExternalModule.status.has(ModuleStatus.pwr_status == None))
+            elif last_action == 'power':
+                modules = modules.filter(ExternalModule.status.has(ModuleStatus.pwr_status != None), ExternalModule.status.has(ModuleStatus.opt_status == None))
+            elif last_action == 'optical':
+                modules = modules.filter(ExternalModule.status.has(ModuleStatus.opt_status != None), ExternalModule.status.has(ModuleStatus.tested == None))
+            elif last_action == 'test':
+                modules = modules.filter(ExternalModule.status.has(ModuleStatus.tested != None))
+
         self.fill_table(modules)
 
 
-    def update_from_table(self, row, col):
-        self.browseMODTab.selectRow(row)
-        barcode = self.browseMODTab.item(row, 0).text()
-        self.show_module_details(barcode)
+    def update_from_table(self, row, col, old_row = None, old_col = None):
+        try:
+            barcode = self.browseMODTab.item(row, 0).text()
+        except AttributeError:
+            pass
+        else:
+            self.show_module_details(barcode)
 
 
     def fill_table(self, modules=None):

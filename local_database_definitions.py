@@ -11,18 +11,20 @@ from sqlalchemy.sql import func
 from geometry import Geometry
 
 import logging
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 
 Base = declarative_base()
 
 class LogEvent(Base):
     __tablename__ = "log_events"
     id = Column(Integer, primary_key=True)
-    barcode = Column(Integer)
+    barcode = Column(Integer, ForeignKey('external_module.barcode'))
     text = Column(String(250), nullable=False)
+    user = Column(String(250))
     time = Column(DateTime(),  default=func.now())
+    module = relationship("ExternalModule", back_populates="logs")
 
-    def __repr__(self):
+    def __str__(self):
         return f"{self.time}: {self.text}"
 
 class ExternalModule(Base):
@@ -37,6 +39,10 @@ class ExternalModule(Base):
     module_type = Column(String(250))
     module_thickness = Column(String(250))
     status = relationship("ModuleStatus", uselist=False, back_populates="module")
+    logs = relationship("LogEvent", back_populates="module", order_by="LogEvent.time")
+
+    def __str__(self):
+        return "barcode: {barcode}\nlocation: {location}\ntype: {module_type}\nthickness: {module_thickness}".format(**vars(self))
     
 
 class ModuleStatus(Base):
@@ -52,7 +58,7 @@ class ModuleStatus(Base):
     module = relationship("ExternalModule", back_populates="status")
 
     def __str__(self):
-        return f"detid: {self.detid}\nbarcode: {self.barcode}\nscrewed: {self.screwed}\npower: {self.pwr_status}\noptical: {self.opt_status}\ntested: {self.tested}\nresults: {self.test_status}"
+        return "detid: {detid}\nbarcode: {barcode}\nscrewed: {screwed}\npower: {pwr_status}\noptical: {opt_status}\ntested: {tested}\nresults: {test_status}".format(**vars(self))
 
 def db_session(infile = 'sqlite:///dee_builder.db'):
     engine = create_engine(infile)
@@ -102,8 +108,8 @@ if __name__ == "__main__":
         return start + datetime.timedelta(seconds=random.randint(0, int((end - start).total_seconds())))
 
     def rand_result():
-        picks = ["ok", "faulty", None]
-        weights = [0.5,0.1,0.4]
+        picks = ["ok", "faulty"]
+        weights = [0.9,0.1]
         return random.choices(picks,weights=weights,k=1)[0]
 
     def associate_by_type(geometry_df, module_list, module_type, module_thickness = None):
@@ -120,7 +126,18 @@ if __name__ == "__main__":
         candidates = [m["barcode"] for m in module_list if m["module_type"] == module_type and m['location'] == 'Louvain']
         logging.debug(f"candidates: {len(candidates)}")
         barcodes = random.sample(candidates, num)
-        return [{"barcode":barcodes.pop(), "detid":detid, "screwed":random_datetime(d1,d2), "test_status":rand_result() } for detid, row in detids.iterrows()]
+        modules = [{"barcode":barcodes.pop(), "detid":detid, "screwed":random_datetime(d1,d2)} for detid, row in detids.iterrows()]
+        for module in modules:
+            if random.random() > 0.2:
+                module["pwr_status"] = module["screwed"] + datetime.timedelta(hours=1)
+                if random.random() > 0.2:
+                    module["opt_status"] = module["screwed"] + datetime.timedelta(hours=2)
+                    if random.random() > 0.2:
+                        module["tested"] = module["screwed"] + datetime.timedelta(hours=3)
+                        module["test_status"] = rand_result()
+        return modules
+
+
 
     detids = associate_by_type(test_dee_1, modules, "2S", 1.8)
     detids += associate_by_type(test_dee_1, modules, "2S", 4.0)
@@ -133,5 +150,15 @@ if __name__ == "__main__":
     detids += associate_by_type(test_dee_5, modules, "PS10G")
 
     session.add_all([ModuleStatus(**data) for data in detids])
+
+    ## add some log entries
+    entries = []
+    for detid in (d for d in detids if d["screwed"]):
+        num_entries = random.choices(range(5),weights=[9,1,1,1,1],k=1)[0]
+        for i in range(num_entries):
+            time = random_datetime(detid["screwed"], detid["screwed"]+datetime.timedelta(days=1))
+            entries.append({"barcode": detid["barcode"], "text": f"fake comment {i}", "time": time})
+
+    session.add_all([LogEvent(**data) for data in entries])
 
     session.commit()
