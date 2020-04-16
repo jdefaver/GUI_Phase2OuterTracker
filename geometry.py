@@ -2,6 +2,21 @@ import re
 import pandas as pd
 from copy import deepcopy
 
+class MGeometry(pd.Series):
+    def __init__(self, series):
+        super().__init__(series)
+
+    @property
+    def markdown(self):
+        text = f"""
+ * Phi: {self.module_phi_deg}
+ * R: {self.radius_mm} (ring {self.module_ring})
+ * Z: {self.module_z_mm} (layer {self.module_layer})
+ * section: {self.module_section}
+ * MFB: {self.mfb} on channel {self.opt_services_channel}
+        """
+        return text
+
 class Geometry(pd.DataFrame):
     """
     Load and filter module list from csv files

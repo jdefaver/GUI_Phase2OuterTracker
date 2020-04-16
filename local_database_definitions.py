@@ -43,6 +43,10 @@ class ExternalModule(Base):
 
     def __str__(self):
         return "barcode: {barcode}\nlocation: {location}\ntype: {module_type}\nthickness: {module_thickness}".format(**vars(self))
+
+    @property
+    def markdown(self):
+        return "\n* location: {location}\n * type: {module_type}\n * thickness: {module_thickness}".format(**vars(self))
     
 
 class ModuleStatus(Base):
@@ -59,6 +63,10 @@ class ModuleStatus(Base):
 
     def __str__(self):
         return "detid: {detid}\nbarcode: {barcode}\nscrewed: {screwed}\npower: {pwr_status}\noptical: {opt_status}\ntested: {tested}\nresults: {test_status}".format(**vars(self))
+
+    @property
+    def markdown(self):
+        return "\n * detid: {detid}\n * screwed: {screwed}\n * power: {pwr_status}\n * optical: {opt_status}\n * tested: {tested}\n * results: {test_status}".format(**vars(self))
 
 def db_session(infile = 'sqlite:///dee_builder.db'):
     engine = create_engine(infile)
@@ -144,7 +152,7 @@ if __name__ == "__main__":
     detids += associate_by_type(test_dee_1, modules, "PS5G")
     detids += associate_by_type(test_dee_1, modules, "PS10G")
 
-    detids = associate_by_type(test_dee_5, modules, "2S", 1.8)
+    detids += associate_by_type(test_dee_5, modules, "2S", 1.8)
     detids += associate_by_type(test_dee_5, modules, "2S", 4.0)
     detids += associate_by_type(test_dee_5, modules, "PS5G")
     detids += associate_by_type(test_dee_5, modules, "PS10G")

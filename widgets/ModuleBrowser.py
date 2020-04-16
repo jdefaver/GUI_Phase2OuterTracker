@@ -1,9 +1,11 @@
 import re, string
+from markdown import markdown
 from PyQt5.QtWebKitWidgets import QWebView
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.uic import *
+from geometry import MGeometry
 
 from local_database_definitions import LogEvent, ModuleStatus, ExternalModule
 
@@ -61,26 +63,25 @@ class ModuleBrowser(QWidget):
 
     def show_module_details(self, barcode):
 
-        def make_title(title_string, underline = "="):
-            return f"\n\n{title_string}\n{underline*len(title_string)}\n"
-
-        text = make_title(f"Data for module {barcode}")
+        text = f"### Data for module {barcode}"
         module = self.db_session.query(ExternalModule).filter(ExternalModule.barcode == barcode).first()
         if module:
-            text += "\n"+module.__str__()
+            text += "\n"+module.markdown
             if(module.status):
-                text += make_title("Installation status", "-")
-                text += module.status.__str__()
-                text += make_title("Geometry data", "-")
+                text += "\n### Installation status"
+                text += module.status.markdown
+                text += "\n### Geometry data"
                 mgeo = self.geometry.loc[module.status.detid]
-                text += f"opical bundle: {mgeo.mfb} on service {mgeo.opt_services_channel}"
+                # text += f"\n * Optical bundle: {mgeo.mfb} on service {mgeo.opt_services_channel}"
+                text += MGeometry(mgeo).markdown
             if(module.logs):
-                text += make_title("Log Entries", "-")
+                text += "\n### Log Entries"
                 for log in module.logs:
-                    text += str(log)+"\n"
+                    text += "\n * "+str(log)
         else:
-            text += "\nModule not found"
-        self.module_data.setText(text)
+            text += "## Module not found"
+
+        self.module_data.setHtml(markdown(text))
 
     def filter_modules(self):
         modules = self.db_session.query(ExternalModule)

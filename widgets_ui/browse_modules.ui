@@ -535,7 +535,7 @@ background-color: rgb(238, 238, 236);
    <property name="frameShadow">
     <enum>QFrame::Raised</enum>
    </property>
-   <widget class="QTextBrowser" name="module_data">
+   <widget class="QWebView" name="module_data">
     <property name="geometry">
      <rect>
       <x>10</x>
