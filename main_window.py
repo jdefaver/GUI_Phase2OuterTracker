@@ -16,7 +16,8 @@ logging.basicConfig(level=logging.WARNING)
 class DeeBuilder(QMainWindow):
 
     tabs_files = {
-            "browse modules": ModuleBrowser,
+         #   "browse modules": ModuleBrowser,
+            "assembly status": AssemblyStatus,
             "assembly": Assembly,
             "start assembly": StartAssembly,
             "guide": GuideAssembly,

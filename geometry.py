@@ -9,11 +9,12 @@ class MGeometry(pd.Series):
     @property
     def markdown(self):
         text = f"""
- * Phi: {self.module_phi_deg}
- * R: {self.radius_mm} (ring {self.module_ring})
- * Z: {self.module_z_mm} (layer {self.module_layer})
  * section: {self.module_section}
+ * Layer:{self.module_layer} (Z: {self.module_z_mm})
+ * Ring: {self.module_ring} (R: {self.radius_mm})
+ * Phi: {self.module_phi_deg}
  * MFB: {self.mfb} on channel {self.opt_services_channel}
+ * Power channel: {self.pwr_services_channel}  
         """
         return text
 
