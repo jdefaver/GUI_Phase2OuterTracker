@@ -97,9 +97,9 @@ if __name__ == "__main__":
     i = 2792
     s2_40 = [{"barcode": str(i), "module_type": "2S", "location":random.choice(locations), "module_thickness": 4.0} for i in range(i,i+424)]
     i += 424
-    ps_5g = [{"barcode": str(i), "module_type": "PS5G", "location":random.choice(locations), "module_thickness": 1.8} for i in range(i,i+1408)]
+    ps_5g = [{"barcode": str(i), "module_type": "PS5G", "location":random.choice(locations), "module_thickness": 4.0} for i in range(i,i+1408)]
     i += 1408
-    ps_10g = [{"barcode": str(i), "module_type": "PS10G", "location":random.choice(locations), "module_thickness": 1.8} for i in range(i,i+1312)]
+    ps_10g = [{"barcode": str(i), "module_type": "PS10G", "location":random.choice(locations), "module_thickness": 4.0} for i in range(i,i+1312)]
     modules = s2_18 + s2_40 + ps_5g + ps_10g
     session.add_all([ExternalModule(**data) for data in modules])
 
@@ -120,42 +120,42 @@ if __name__ == "__main__":
         weights = [0.9,0.1]
         return random.choices(picks,weights=weights,k=1)[0]
 
-    def associate_by_type(geometry_df, module_list, module_type, module_thickness = None):
-        # FIXME : remove used modules from list
+    def associate(geometry_df, module_list):
         d1 = datetime.datetime.strptime('1/1/2019 1:30 PM', '%m/%d/%Y %I:%M %p')
         d2 = datetime.datetime.strptime('1/1/2020 4:50 AM', '%m/%d/%Y %I:%M %p')
+        sublists = {}
+        candidates = []
+        for index, row in geometry_df.iterrows():
+            key = (row["type"], row['sensor_spacing_mm'])
+            if not key in sublists:
+                sublists[key] = [
+                    m for m in module_list 
+                    if m["module_type"] == row["type"] 
+                    and m['location'] == 'Louvain' 
+                    and m['module_thickness'] == row['sensor_spacing_mm']
+                    ]
+                random.shuffle(sublists[key])
+                print(row["type"], row['sensor_spacing_mm'])
+            barcode = sublists[key].pop()["barcode"]
+            candidates.append({"barcode": barcode, "detid": index, "screwed":random_datetime(d1,d2)})
 
-        detids = geometry_df[geometry_df["type"] == module_type]
-        if module_thickness:
-            detids = detids[detids["sensor_spacing_mm"] == module_thickness]
-        num = len(detids)
-        logging.debug(f"criteria: {module_type}, {module_thickness}")
-        logging.debug(f"needed: {num}")
-        candidates = [m["barcode"] for m in module_list if m["module_type"] == module_type and m['location'] == 'Louvain']
-        logging.debug(f"candidates: {len(candidates)}")
-        barcodes = random.sample(candidates, num)
-        modules = [{"barcode":barcodes.pop(), "detid":detid, "screwed":random_datetime(d1,d2)} for detid, row in detids.iterrows()]
-        for module in modules:
+        module_list[:] = [m for m in module_list if m["barcode"] not in [c["barcode"] for c in candidates]]
+
+        for module in candidates:
             if random.random() > 0.2:
                 module["pwr_status"] = module["screwed"] + datetime.timedelta(hours=1)
-                if random.random() > 0.2:
-                    module["opt_status"] = module["screwed"] + datetime.timedelta(hours=2)
-                    if random.random() > 0.2:
-                        module["tested"] = module["screwed"] + datetime.timedelta(hours=3)
-                        module["test_status"] = rand_result()
-        return modules
+                
+            if "pwr_status" in module and random.random() > 0.2:
+                module["opt_status"] = module["screwed"] + datetime.timedelta(hours=2)
+                    
+            if "opt_status" in module and random.random() > 0.2:
+                module["tested"] = module["screwed"] + datetime.timedelta(hours=3)
+                module["test_status"] = rand_result()
 
+        return candidates
 
-
-    detids = associate_by_type(test_dee_1, modules, "2S", 1.8)
-    detids += associate_by_type(test_dee_1, modules, "2S", 4.0)
-    detids += associate_by_type(test_dee_1, modules, "PS5G")
-    detids += associate_by_type(test_dee_1, modules, "PS10G")
-
-    detids += associate_by_type(test_dee_5, modules, "2S", 1.8)
-    detids += associate_by_type(test_dee_5, modules, "2S", 4.0)
-    detids += associate_by_type(test_dee_5, modules, "PS5G")
-    detids += associate_by_type(test_dee_5, modules, "PS10G")
+    detids =  associate(test_dee_1, modules)
+    detids += associate(test_dee_5, modules)
 
     session.add_all([ModuleStatus(**data) for data in detids])
 
