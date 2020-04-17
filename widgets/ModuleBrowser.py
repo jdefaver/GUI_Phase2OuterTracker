@@ -32,6 +32,8 @@ class ModuleBrowser(QWidget):
         self.ComboBox_LastAction.activated.connect(self.filter_modules)
         self.ComboBox_Status.activated.connect(self.filter_modules)
 
+        self.select_dee.clicked.connect(self.show_dee)
+
         font = QFont('SansSerif', 10)
         font.setStyleHint(QFont.TypeWriter)
         self.module_data.setFont(font)
@@ -132,5 +134,14 @@ class ModuleBrowser(QWidget):
                 status = self.actions_nice[[attr for attr in self.actions_nice.keys() if getattr(module.status,attr)][-1]]
                 self.browseMODTab.setItem(line,4,QTableWidgetItem(status))
                 self.browseMODTab.setItem(line,5,QTableWidgetItem(module.status.test_status))
+
+    def show_dee(self):
+        side = self.dee_side.currentText()
+        layer = self.dee_layer.currentText()
+        surface = self.dee_surface.currentText()
+        vertical = self.dee_vertical.currentText()
+        detids = tuple(self.geometry.full_selector(side, int(layer), int(surface), vertical).index.tolist())
+        modules = self.db_session.query(ExternalModule).filter(ExternalModule.status.has(ModuleStatus.detid.in_(detids))).all()
+        self.fill_table(modules)
 
 
