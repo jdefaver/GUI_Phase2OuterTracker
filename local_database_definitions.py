@@ -135,15 +135,15 @@ if __name__ == "__main__":
                     and m['module_thickness'] == row['sensor_spacing_mm']
                     ]
                 random.shuffle(sublists[key])
-                print(row["type"], row['sensor_spacing_mm'])
-            barcode = sublists[key].pop()["barcode"]
-            candidates.append({"barcode": barcode, "detid": index, "screwed":random_datetime(d1,d2)})
+            if random.random() > 0.1:
+                barcode = sublists[key].pop()["barcode"]
+                candidates.append({"barcode": barcode, "detid": index, "screwed":random_datetime(d1,d2)})
         
         # update module list removing used ones
         module_list[:] = [m for m in module_list if m["barcode"] not in [c["barcode"] for c in candidates]]
 
         for module in candidates:
-            if random.random() > 0.2:
+            if "screwed" in module and random.random() > 0.2:
                 module["pwr_status"] = module["screwed"] + datetime.timedelta(hours=1)
                 
             if "pwr_status" in module and random.random() > 0.2:
