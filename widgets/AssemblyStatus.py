@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 from operator import attrgetter
 import numpy as np
@@ -21,6 +22,15 @@ class AssemblyStatus(QWidget):
 
         self.detids = None
 
+        self.next_layout = QGridLayout()
+        self.next_layout.setColumnStretch(0,5)
+        self.next_layout.setColumnStretch(1,1)
+        next_widget = QWidget(self)
+        next_widget.setLayout(self.next_layout)
+        self.next_steps_area.setWidget(next_widget)
+
+        self.next_steps_table_rows = 0
+
     def show_dee_status(self):
         """
         show modules and status
@@ -30,7 +40,7 @@ class AssemblyStatus(QWidget):
         layer = self.dee_layer.currentText()
         surface = self.dee_surface.currentText()
         vertical = self.dee_vertical.currentText()
-        self.detids = self.geometry.full_selector(side, int(layer), int(surface), vertical, fix_phi = True)
+        self.detids = self.geometry.full_selector(side, int(layer), int(surface), vertical)
         detids_by_ring = {ring: self.detids[self.detids["module_ring"] == ring] for ring in np.sort(self.detids['module_ring'].unique())[::-1]}
         for ring, detids in detids_by_ring.items():
             r_layout = QHBoxLayout()
@@ -49,34 +59,29 @@ class AssemblyStatus(QWidget):
         self.modules = {Module(module, self.detids.loc[module.status.detid]) for module in self.modules}
         
         complete, incomplete, empty = self.process_bundles()
-
         next_detid, next_bundle = self.next_bundle(empty)
-
         to_replace = self.to_replace()
-
         to_continue = self.to_continue()
 
-        text = ""
-
         if incomplete:
-            text += "\n### Incomplete bundles\n"
+            self.add_row(QLabel("Incomplete bundles"))
             for bundle, detids in incomplete.items():
-                text += f" * {bundle}: {', '.join(str(detid) for detid in detids)}\n"
+                for detid in detids:
+                    self.add_row(QLabel(str(detid)), AssemblyButton("Install", self, detid, "screw"))
 
         if next_detid:
-            text += "\n### Next Bundle to start\n"
-            text += f" * Please start installing on detid {next_detid} in bundle {next_bundle}\n"
-            text += f" * Location : ring {self.detids.loc[next_detid]['ring']}, phi = {self.detids.loc[next_detid]['module_phi_deg']:.2f}\n"
+            self.add_row(QLabel("Next bundle to start"))
+            self.add_row(QLabel(str(next_detid)), AssemblyButton("Start new", self, next_detid, "screw"))
 
         if to_replace:
-            text += "\n### Modules to replace\n"
-            text += "\n".join(mod.markdown for mod in to_replace)+"\n"
+            self.add_row(QLabel("Modules to replace"))
+            for mod in to_replace:
+                self.add_row(QLabel(str(mod.detid)), AssemblyButton("Replace", self, mod.detid, "replace"))
 
         if to_continue:
-            text += "\n### Modules needing more work\n"
-            text += "\n".join(mod.markdown+f", next: {mod.next_step}" for mod in to_continue)+"\n"
-
-        print(text)
+            self.add_row(QLabel("Needing more work"))
+            for mod in to_continue:
+                    self.add_row(QLabel(str(mod.detid)), AssemblyButton("Proceed", self, mod.detid, "continue"))
 
     def to_replace(self):
         modules_to_replace = [Module(m, geometry_df = self.detids) for m in self.modules if m.status.test_status == 'faulty']
@@ -144,6 +149,31 @@ class AssemblyStatus(QWidget):
                     w.deleteLater()
             line.deleteLater()
 
+    def add_row(self, w1, w2 = None):
+        if w2 is None:
+            self.next_layout.addWidget(w1, self.next_steps_table_rows, 0, 1, 2, Qt.AlignCenter)
+        else:
+            self.next_layout.addWidget(w1, self.next_steps_table_rows, 0)
+            self.next_layout.addWidget(w2, self.next_steps_table_rows, 1)
+        self.next_steps_table_rows += 1
+
+    def go_to_assembly(self):
+        sender = self.sender()
+        print(sender.detid, sender.next_step)
+
+
+class AssemblyButton(QPushButton):
+    """
+    display a button to get to the assembly guide with the right step
+    """
+    def __init__(self, text, parent = None, detid = None, next_step = None):
+        super().__init__(text, parent)
+        self.detid = detid
+        self.next_step = next_step
+        try:
+            self.clicked.connect(parent.go_to_assembly)
+        except AttributeError:
+            logging.warning("Parent class misses the requested method 'go_to_assembly'")
 
 
 class ModuleButton(QPushButton):
@@ -164,7 +194,6 @@ class ModuleButton(QPushButton):
         if self.module:
             text = f"{detid}\n{self.module.barcode}\n{self.geo_data['mfb']}"
             self.setText(text)
-            # self.setText(self.module.barcode+"\n\n")
         else:
             text = f"{detid}\n\n{self.geo_data['mfb']}"
             self.setText(text)
