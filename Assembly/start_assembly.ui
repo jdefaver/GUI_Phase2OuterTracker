@@ -50,142 +50,6 @@
      </rect>
     </property>
    </widget>
-   <widget class="QCommandLinkButton" name="commandLinkButton">
-    <property name="geometry">
-     <rect>
-      <x>40</x>
-      <y>400</y>
-      <width>141</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">font: 57 12pt &quot;Ubuntu&quot;;</string>
-    </property>
-    <property name="text">
-     <string>Scan Module</string>
-    </property>
-    <property name="icon">
-     <iconset>
-      <normaloff>../../Icons/scan.png</normaloff>../../Icons/scan.png</iconset>
-    </property>
-   </widget>
-   <widget class="QCommandLinkButton" name="commandLinkButton_3">
-    <property name="geometry">
-     <rect>
-      <x>40</x>
-      <y>440</y>
-      <width>271</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">font: 57 12pt &quot;Ubuntu&quot;;</string>
-    </property>
-    <property name="text">
-     <string>Set Module Location on the Dee</string>
-    </property>
-   </widget>
-   <widget class="QCommandLinkButton" name="commandLinkButton_4">
-    <property name="geometry">
-     <rect>
-      <x>40</x>
-      <y>480</y>
-      <width>271</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">font: 57 12pt &quot;Ubuntu&quot;;</string>
-    </property>
-    <property name="text">
-     <string>Set Optical Group</string>
-    </property>
-   </widget>
-   <widget class="QCommandLinkButton" name="commandLinkButton_5">
-    <property name="geometry">
-     <rect>
-      <x>40</x>
-      <y>520</y>
-      <width>271</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">font: 57 12pt &quot;Ubuntu&quot;;</string>
-    </property>
-    <property name="text">
-     <string>Set Power Group</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pushButton">
-    <property name="geometry">
-     <rect>
-      <x>340</x>
-      <y>410</y>
-      <width>89</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Done</string>
-    </property>
-    <property name="icon">
-     <iconset>
-      <normaloff>../../Icons/done_black_2048x2048.png</normaloff>../../Icons/done_black_2048x2048.png</iconset>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pushButton_2">
-    <property name="geometry">
-     <rect>
-      <x>340</x>
-      <y>450</y>
-      <width>89</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Done</string>
-    </property>
-    <property name="icon">
-     <iconset>
-      <normaloff>../../Icons/done_black_2048x2048.png</normaloff>../../Icons/done_black_2048x2048.png</iconset>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pushButton_3">
-    <property name="geometry">
-     <rect>
-      <x>340</x>
-      <y>490</y>
-      <width>89</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Done</string>
-    </property>
-    <property name="icon">
-     <iconset>
-      <normaloff>../../Icons/done_black_2048x2048.png</normaloff>../../Icons/done_black_2048x2048.png</iconset>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pushButton_4">
-    <property name="geometry">
-     <rect>
-      <x>340</x>
-      <y>530</y>
-      <width>89</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Done</string>
-    </property>
-    <property name="icon">
-     <iconset>
-      <normaloff>../../Icons/done_black_2048x2048.png</normaloff>../../Icons/done_black_2048x2048.png</iconset>
-    </property>
-   </widget>
    <widget class="QFrame" name="frame">
     <property name="geometry">
      <rect>
@@ -202,6 +66,153 @@
      <enum>QFrame::Raised</enum>
     </property>
    </widget>
+   <widget class="QWidget" name="gridLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>390</y>
+      <width>621</width>
+      <height>221</height>
+     </rect>
+    </property>
+    <layout class="QGridLayout" name="steps_layout" columnstretch="3,1,1">
+     <item row="0" column="2">
+      <widget class="QLabel" name="screw_op">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="screw_date">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <widget class="QLabel" name="power_op">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLabel" name="power_date">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QCommandLinkButton" name="screw_button">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">font: 57 12pt &quot;Ubuntu&quot;;</string>
+       </property>
+       <property name="text">
+        <string>Install module on dee</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QCommandLinkButton" name="power_button">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">font: 57 12pt &quot;Ubuntu&quot;;</string>
+       </property>
+       <property name="text">
+        <string>Connect LV and HV</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QCommandLinkButton" name="test_button">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">font: 57 12pt &quot;Ubuntu&quot;;</string>
+       </property>
+       <property name="text">
+        <string>Run tests</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="2">
+      <widget class="QLabel" name="test_op">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="2">
+      <widget class="QLabel" name="optical_op">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QCommandLinkButton" name="optical_button">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">font: 57 12pt &quot;Ubuntu&quot;;</string>
+       </property>
+       <property name="text">
+        <string>Connect optical fiber</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLabel" name="optical_date">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QLabel" name="test_date">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QCommandLinkButton" name="remove_button">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">font: 57 12pt &quot;Ubuntu&quot;;</string>
+       </property>
+       <property name="text">
+        <string>Remove module</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QLabel" name="remove_date">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="2">
+      <widget class="QLabel" name="remove_op">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -209,7 +220,7 @@
      <x>0</x>
      <y>0</y>
      <width>1562</width>
-     <height>22</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuConnection">

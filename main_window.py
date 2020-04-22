@@ -36,15 +36,15 @@ class DeeBuilder(QMainWindow):
         detids_file = "DetId_modules_list.csv"
         self.geometry = Geometry.from_csv(modules_to_dtc_files, aggregation_files, detids_file)
 
-        tabs = QTabWidget()
+        self.tabs = QTabWidget()
         for title, source in self.tabs_files.items():
             widget = source(self)
-            tabs.addTab(widget, title)
-        self.setCentralWidget(tabs)
+            setattr(self, title.lower().replace(" ","_"),widget)
+            self.tabs.addTab(widget, title)
+        self.setCentralWidget(self.tabs)
 
         self.setWindowTitle(self.title)
         self.setGeometry(0, 0, 1600, 1080)
-
 
 
 if __name__ == "__main__":

@@ -10,11 +10,14 @@ from PyQt5.uic import *
 from local_database_definitions import LogEvent, ModuleStatus, ExternalModule
 from Module import Module
 
+from assembly_dialogs import *
+
 class AssemblyStatus(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
         ui = loadUi('widgets_ui/assembly_status.ui', self) 
 
+        self.parent = parent
         self.geometry = parent.geometry
         self.db_session = parent.db_session
 
@@ -138,7 +141,7 @@ class AssemblyStatus(QWidget):
         remove current shown modules
         """
         while self.dee_status_display.count() > 0:
-            line = item = self.dee_status_display.takeAt(0)
+            line = self.dee_status_display.takeAt(0)
             while line.count() > 0:
                 item = line.takeAt(0)
                 if not item:
@@ -159,7 +162,12 @@ class AssemblyStatus(QWidget):
 
     def go_to_assembly(self):
         sender = self.sender()
-        print(sender.detid, sender.next_step)
+        dialog = None
+        if sender.next_step == "screw":
+            dialog = ScrewDialog(self, sender.detid)
+
+        if dialog:
+            dialog.exec()
 
 
 class AssemblyButton(QPushButton):
