@@ -64,7 +64,7 @@
    <property name="frameShadow">
     <enum>QFrame::Raised</enum>
    </property>
-   <widget class="QWidget" name="verticalLayoutWidget">
+   <widget class="QStackedWidget" name="text_widget">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -73,7 +73,9 @@
       <height>301</height>
      </rect>
     </property>
-    <layout class="QStackedLayout" name="text_layout"/>
+    <widget class="QWidget" name="verticalStackedWidgetPage1" native="true">
+     <layout class="QGridLayout" name="text_layout"/>
+    </widget>
    </widget>
   </widget>
   <widget class="QLabel" name="label">
@@ -124,7 +126,7 @@ p, li { white-space: pre-wrap; }
     </property>
    </widget>
   </widget>
-  <widget class="QCommandLinkButton" name="saveElogandContinue">
+  <widget class="QCommandLinkButton" name="save_elog">
    <property name="geometry">
     <rect>
      <x>1370</x>
@@ -155,7 +157,7 @@ p, li { white-space: pre-wrap; }
    <property name="frameShadow">
     <enum>QFrame::Raised</enum>
    </property>
-   <widget class="QWidget" name="verticalLayoutWidget_2">
+   <widget class="QStackedWidget" name="image_widget">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -164,7 +166,9 @@ p, li { white-space: pre-wrap; }
       <height>301</height>
      </rect>
     </property>
-    <layout class="QStackedLayout" name="image_layout"/>
+    <widget class="QWidget" name="verticalStackedWidget_2Page1" native="true">
+     <layout class="QGridLayout" name="image_layout"/>
+    </widget>
    </widget>
   </widget>
   <widget class="QWidget" name="horizontalLayoutWidget">

@@ -22,29 +22,29 @@ class GuideAssembly(QWidget):
             if "image" in step:
                 iw.setPixmap(QPixmap(step["image"]))
 
-            self.text_layout.addWidget(tw)
-            self.image_layout.addWidget(iw)
+            self.text_widget.addWidget(tw)
+            self.image_widget.addWidget(iw)
 
-        self.text_layout.setCurrentIndex(0)
-        self.image_layout.setCurrentIndex(0)
+        self.text_widget.setCurrentIndex(1)
+        self.image_widget.setCurrentIndex(1)
 
     def next_step(self):
-        current = self.text_layout.currentIndex()
-        if current < self.text_layout.count():
-            self.text_layout.setCurrentIndex(current + 1)
-            self.image_layout.setCurrentIndex(current + 1)
-        if current + 2 == self.text_layout.count():
+        current = self.text_widget.currentIndex()
+        if current + 1 < self.text_widget.count():
+            self.text_widget.setCurrentIndex(current + 1)
+            self.image_widget.setCurrentIndex(current + 1)
+        if current + 2 == self.text_widget.count():
             self.next_button.setEnabled(False)
-        if current == 0:
+        if current == 1:
             self.previous_button.setEnabled(True)
 
 
     def previous_step(self):
-        current = self.text_layout.currentIndex()
-        if current > 0:
-            self.text_layout.setCurrentIndex(current - 1)
-            self.image_layout.setCurrentIndex(current - 1)
-        if current - 1 == 0:
+        current = self.text_widget.currentIndex()
+        if current > 1:
+            self.text_widget.setCurrentIndex(current - 1)
+            self.image_widget.setCurrentIndex(current - 1)
+        if current - 2 == 0:
             self.previous_button.setEnabled(False)
-        if current + 1 == self.text_layout.count():
+        if current + 1 == self.text_widget.count():
             self.next_button.setEnabled(True)

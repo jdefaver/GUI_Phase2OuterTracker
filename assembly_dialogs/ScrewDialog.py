@@ -33,9 +33,9 @@ class ScrewDialog (QDialog):
     def proceed(self, barcode):
         guide = [
             {"text": barcode, "image": None},
-            {"text": "test",  "image": None},
-            {"text": "troll", "image": None},
-            {"text": "broll", "image": None}
+            {"text": "test",  "image": 'assembly_images/test_1.png'},
+            {"text": "troll", "image": 'assembly_images/test_2.png'},
+            {"text": "broll", "image": 'assembly_images/test_3.png'}
         ]
         self.guide = GuideAssembly.GuideAssembly(self, guide)
         self.layout.addWidget(self.guide)
