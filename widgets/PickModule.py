@@ -7,9 +7,10 @@ import re
 import logging
 
 class PickModule(QWidget):
-    def __init__(self, parent, modules):
+    def __init__(self, parent, modules, success_callback):
         super().__init__(parent)
         self.parent = parent
+        self.success_callback = success_callback
         ui = loadUi('widgets_ui/pick_module.ui', self)
         self.modules = modules
         text = "\n".join(sorted(m.barcode for m in modules))
@@ -30,7 +31,7 @@ class PickModule(QWidget):
 
     def check_barcode(self, barcode):
         if barcode in (m.barcode for m in self.modules):
-            self.parent.set_barcode(barcode)
+            self.success_callback(barcode)
         else:
             self.barcode_chars = []
             # FIXME : pop a dialog for this

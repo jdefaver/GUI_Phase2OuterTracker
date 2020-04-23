@@ -78,14 +78,19 @@
     </widget>
    </widget>
   </widget>
-  <widget class="QLabel" name="label">
+  <widget class="QLabel" name="assembly_title">
    <property name="geometry">
     <rect>
      <x>80</x>
-     <y>20</y>
-     <width>91</width>
-     <height>31</height>
+     <y>0</y>
+     <width>891</width>
+     <height>51</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>16</pointsize>
+    </font>
    </property>
    <property name="text">
     <string> UserGuide : </string>
@@ -94,9 +99,9 @@
   <widget class="QFrame" name="frame">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>80</x>
      <y>450</y>
-     <width>1531</width>
+     <width>1441</width>
      <height>171</height>
     </rect>
    </property>
@@ -111,7 +116,7 @@
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>1511</width>
+      <width>1421</width>
       <height>151</height>
      </rect>
     </property>
@@ -126,12 +131,12 @@ p, li { white-space: pre-wrap; }
     </property>
    </widget>
   </widget>
-  <widget class="QCommandLinkButton" name="save_elog">
+  <widget class="QCommandLinkButton" name="proceed_button">
    <property name="geometry">
     <rect>
-     <x>1370</x>
-     <y>630</y>
-     <width>171</width>
+     <x>1430</x>
+     <y>640</y>
+     <width>91</width>
      <height>31</height>
     </rect>
    </property>
@@ -139,7 +144,7 @@ p, li { white-space: pre-wrap; }
     <string notr="true">font: 11pt &quot;Ubuntu&quot;;</string>
    </property>
    <property name="text">
-    <string>Save and Continue</string>
+    <string>Proceed</string>
    </property>
   </widget>
   <widget class="QFrame" name="FreeCADGIF">
@@ -196,6 +201,19 @@ p, li { white-space: pre-wrap; }
      </widget>
     </item>
    </layout>
+  </widget>
+  <widget class="QPushButton" name="add_log_entry">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>640</y>
+     <width>121</width>
+     <height>27</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>add log entry</string>
+   </property>
   </widget>
  </widget>
  <resources/>

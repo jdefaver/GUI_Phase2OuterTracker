@@ -1,7 +1,9 @@
+from functools import partial
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.uic import *
+from sqlalchemy.sql import func
 
 from local_database_definitions import LogEvent, ModuleStatus, ExternalModule
 
@@ -27,19 +29,26 @@ class ScrewDialog (QDialog):
         self.good_modules = self.good_modules.all()
 
         # first tab : offer a list of modules and ask to scan one of them
-        self.pick = PickModule.PickModule(self, self.good_modules)
+        self.pick = PickModule.PickModule(self, self.good_modules, self.go_to_guide)
         self.layout.addWidget(self.pick)
 
-    def proceed(self, barcode):
+    def go_to_guide(self, barcode):
         guide = [
             {"text": barcode, "image": None},
             {"text": "test",  "image": 'assembly_images/test_1.png'},
             {"text": "troll", "image": 'assembly_images/test_2.png'},
             {"text": "broll", "image": 'assembly_images/test_3.png'}
         ]
-        self.guide = GuideAssembly.GuideAssembly(self, guide)
+        title = f"Installing module with barcode {barcode} at detid {self.detid}"
+        self.guide = GuideAssembly.GuideAssembly(self, guide, proceed_callback = partial(self.proceed, barcode), title = title)
         self.layout.addWidget(self.guide)
         self.layout.setCurrentIndex(1)
 
-    def set_barcode(self, barcode):
-        self.proceed(barcode)
+    def proceed(self, barcode):
+        self.save_new_installation(barcode)
+        self.close()
+
+    def save_new_installation(self, barcode):
+        status = {"barcode": barcode, "detid": self.detid, "screwed":func.now()}
+        self.db_session.add(ModuleStatus(**status))
+        self.db_session.commit()

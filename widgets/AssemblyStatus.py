@@ -50,13 +50,16 @@ class AssemblyStatus(QWidget):
             for detid, data in detids.iterrows():
                 r_layout.addStretch(1)
                 text = f"{data['type']}\n{data['sensor_spacing_mm']}"
-                r_layout.addWidget(ModuleButton(self, detid))
+                mb = ModuleButton(self, detid)
+                setattr(self, f"module_button_{detid}", mb)
+                r_layout.addWidget(mb)
                 r_layout.addStretch(1)
             self.dee_status_display.addLayout(r_layout)
 
         self.compute_next_steps()
 
     def compute_next_steps(self):
+        self.clear_next_steps()
         detids_ids = tuple(self.detids.index.tolist())
         self.modules = self.db_session.query(ExternalModule).filter(ExternalModule.status.has(ModuleStatus.detid.in_(detids_ids))).all()
         self.modules = {Module(module, self.detids.loc[module.status.detid]) for module in self.modules}
@@ -85,6 +88,8 @@ class AssemblyStatus(QWidget):
             self.add_row(QLabel("Needing more work"))
             for mod in to_continue:
                     self.add_row(QLabel(str(mod.detid)), AssemblyButton("Proceed", self, mod.detid, "continue"))
+
+        self.next_layout.addItem(QSpacerItem(1,1,QSizePolicy.Minimum,QSizePolicy.Expanding), self.next_steps_table_rows, 0)
 
     def to_replace(self):
         modules_to_replace = [Module(m, geometry_df = self.detids) for m in self.modules if m.status.test_status == 'faulty']
@@ -152,6 +157,16 @@ class AssemblyStatus(QWidget):
                     w.deleteLater()
             line.deleteLater()
 
+    def clear_next_steps(self):
+        while self.next_layout.count() > 0:
+            i = self.next_layout.takeAt(0)
+            if not i:
+                continue
+            w = i.widget()
+            if w:
+                w.deleteLater()
+
+
     def add_row(self, w1, w2 = None):
         if w2 is None:
             self.next_layout.addWidget(w1, self.next_steps_table_rows, 0, 1, 2, Qt.AlignCenter)
@@ -168,6 +183,8 @@ class AssemblyStatus(QWidget):
 
         if dialog:
             dialog.exec()
+            self.show_dee_status()
+            self.compute_next_steps()
 
 
 class AssemblyButton(QPushButton):
@@ -177,11 +194,19 @@ class AssemblyButton(QPushButton):
     def __init__(self, text, parent = None, detid = None, next_step = None):
         super().__init__(text, parent)
         self.detid = detid
+        self.parent = parent
         self.next_step = next_step
         try:
-            self.clicked.connect(parent.go_to_assembly)
-        except AttributeError:
-            logging.warning("Parent class misses the requested method 'go_to_assembly'")
+            self.clicked.connect(self.parent.go_to_assembly)
+        except TypeError:
+            logging.warning("Parent class must provide a 'go_to_assembly' method")
+
+    def enterEvent(self, event):
+        getattr(self.parent, f"module_button_{self.detid}").highlight()
+
+    def leaveEvent(self, event):
+        getattr(self.parent, f"module_button_{self.detid}").normal()
+        
 
 
 class ModuleButton(QPushButton):
@@ -220,3 +245,10 @@ class ModuleButton(QPushButton):
             else:
                 p.setColor(self.backgroundRole(), Qt.yellow)
             self.setPalette(p)
+
+
+    def highlight(self):
+        self.setStyleSheet("QWidget {border: 2px solid red}")
+
+    def normal(self):
+        QTimer.singleShot(300, lambda: self.setStyleSheet(""))
