@@ -8,27 +8,17 @@ from sqlalchemy.sql import func
 from local_database_definitions import LogEvent, ModuleStatus, ExternalModule
 
 from widgets import GuideAssembly, PickModule
+from assembly_dialogs import AbstractAssemblyDialog, PowerDialog
 
-class ScrewDialog (QDialog):
+class ScrewDialog (AbstractAssemblyDialog):
     def __init__(self, parent, detid):
-        super().__init__(parent)
-        self.detid = detid
-        self.parent = parent
-        self.db_session = parent.db_session
-        self.geometry = parent.geometry
+        super().__init__(parent, detid)
 
-        self.layout = QStackedLayout()
-        self.setLayout(self.layout)
-
-        self.setGeometry(0, 0, 1600, 1080)
-        
-        self.geo_data = self.geometry.loc[detid]
         self.good_modules = self.db_session.query(ExternalModule).filter(ExternalModule.status == None)
         self.good_modules = self.good_modules.filter(ExternalModule.module_type == self.geo_data["type"])
         self.good_modules = self.good_modules.filter(ExternalModule.module_thickness == self.geo_data["sensor_spacing_mm"])
         self.good_modules = self.good_modules.all()
 
-        # first tab : offer a list of modules and ask to scan one of them
         self.pick = PickModule.PickModule(self, self.good_modules, self.go_to_guide)
         self.layout.addWidget(self.pick)
 
@@ -46,6 +36,8 @@ class ScrewDialog (QDialog):
 
     def proceed(self, barcode):
         self.save_new_installation(barcode)
+        dialog = PowerDialog.PowerDialog(self.parent, self.detid)
+        dialog.exec()
         self.close()
 
     def save_new_installation(self, barcode):

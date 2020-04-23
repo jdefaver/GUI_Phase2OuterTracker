@@ -34,6 +34,9 @@ class AssemblyStatus(QWidget):
 
         self.next_steps_table_rows = 0
 
+    def m_geo(self, detid):
+        return self.geometry.loc[detid]
+
     def show_dee_status(self):
         """
         show modules and status
@@ -87,7 +90,8 @@ class AssemblyStatus(QWidget):
         if to_continue:
             self.add_row(QLabel("Needing more work"))
             for mod in to_continue:
-                    self.add_row(QLabel(str(mod.detid)), AssemblyButton("Proceed", self, mod.detid, "continue"))
+                    text = f"{mod.detid}, next step: {mod.next_step}"
+                    self.add_row(QLabel(text), AssemblyButton("Proceed", self, mod.detid, mod.next_step))
 
         self.next_layout.addItem(QSpacerItem(1,1,QSizePolicy.Minimum,QSizePolicy.Expanding), self.next_steps_table_rows, 0)
 
@@ -104,7 +108,7 @@ class AssemblyStatus(QWidget):
         determine the next bundle to start screwing
         it should be the one containing the most central module of the most external ring
         """
-        # TODO: this requires that PHI angles are brought back up and flipped if needed: check it works
+        # TODO: this requires that PHI angles are brought back up and flipped if needed
         max_ring = 0
         central_phi = 180
         best_detid = None
@@ -126,9 +130,9 @@ class AssemblyStatus(QWidget):
         """
         to_fill = {}
         full = []
-        dee_bundles = self.detids.reset_index().groupby('mfb')['Module_DetId/i'].apply(list).to_dict()
+        dee_bundles = self.detids.reset_index().sort_values(by='ring', ascending=False).groupby('mfb')['Module_DetId/i'].apply(list).to_dict()
         bundles_installed = defaultdict(list)
-        for module in self.modules:
+        for module in sorted(self.modules, key=lambda m: -self.geometry.loc[m.status.detid]['ring']):
             bundle = self.geometry.loc[module.status.detid]['mfb']
             bundles_installed[bundle].append(module.status.detid)
 
@@ -166,7 +170,6 @@ class AssemblyStatus(QWidget):
             if w:
                 w.deleteLater()
 
-
     def add_row(self, w1, w2 = None):
         if w2 is None:
             self.next_layout.addWidget(w1, self.next_steps_table_rows, 0, 1, 2, Qt.AlignCenter)
@@ -180,6 +183,12 @@ class AssemblyStatus(QWidget):
         dialog = None
         if sender.next_step == "screw":
             dialog = ScrewDialog(self, sender.detid)
+        elif sender.next_step == "Connect power":
+            dialog = PowerDialog(self, sender.detid)
+        elif sender.next_step == "Connect optics":
+            pass
+        elif sender.next_step == "Test":
+            pass
 
         if dialog:
             dialog.exec()
