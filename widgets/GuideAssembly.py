@@ -2,18 +2,23 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.uic import *
+from sqlalchemy.sql import func
 
+from local_database_definitions import LogEvent
 import logging
 
 class GuideAssembly(QWidget):
-    def __init__(self, parent, guide = (), proceed_callback = None, title = None):
+    def __init__(self, parent, barcode, guide = (), proceed_callback = None, title = None):
         super().__init__(parent)
         ui = loadUi('widgets_ui/guide_assembly.ui', self)
         self.guide = guide
+        self.db_session = parent.db_session
+        self.barcode = barcode
 
         self.next_button.clicked.connect(self.next_step)
         self.previous_button.clicked.connect(self.previous_step)
         self.previous_button.setEnabled(False)
+        self.add_elog_entry.clicked.connect(self.save_elog)
 
         if title is not None:
             self.assembly_title.setText(title)
@@ -58,3 +63,16 @@ class GuideAssembly(QWidget):
             self.previous_button.setEnabled(False)
         if current + 1 == self.text_widget.count():
             self.next_button.setEnabled(True)
+
+    def save_elog(self):
+        if self.elog_text.toPlainText().strip():
+            log_event = LogEvent(barcode = self.barcode, text = self.elog_text.toPlainText(), time =  func.now())
+            self.db_session.add(log_event)
+            self.db_session.commit()
+            self.elog_text.setPlainText("")
+            QMessageBox.information(self, "OK", "Your elog entry was saved")
+        else:
+            QMessageBox.warning(self, "Failure", "Cannot save an empty elog entry")
+
+
+

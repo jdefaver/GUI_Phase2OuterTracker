@@ -20,7 +20,7 @@ class DeeBuilder(QMainWindow):
             "assembly status": AssemblyStatus,
             "assembly": Assembly,
             "start assembly": StartAssembly,
-            "guide": GuideAssembly,
+            # "guide": GuideAssembly,
             "setup FC7": SetupFC7,
             "new issue": NewIssue
             }

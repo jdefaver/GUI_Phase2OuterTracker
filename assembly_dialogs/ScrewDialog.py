@@ -30,7 +30,7 @@ class ScrewDialog (AbstractAssemblyDialog):
             {"text": "broll", "image": 'assembly_images/test_3.png'}
         ]
         title = f"Installing module with barcode {barcode} at detid {self.detid}"
-        self.guide = GuideAssembly.GuideAssembly(self, guide, proceed_callback = partial(self.proceed, barcode), title = title)
+        self.guide = GuideAssembly.GuideAssembly(self, barcode, guide, proceed_callback = partial(self.proceed, barcode), title = title)
         self.layout.addWidget(self.guide)
         self.layout.setCurrentIndex(1)
 

@@ -73,7 +73,7 @@
       <height>301</height>
      </rect>
     </property>
-    <widget class="QWidget" name="verticalStackedWidgetPage1" native="true">
+    <widget class="QWidget" name="verticalStackedWidgetPage1">
      <layout class="QGridLayout" name="text_layout"/>
     </widget>
    </widget>
@@ -111,7 +111,7 @@
    <property name="frameShadow">
     <enum>QFrame::Raised</enum>
    </property>
-   <widget class="QTextEdit" name="WriteELOG">
+   <widget class="QTextEdit" name="elog_text">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -171,7 +171,7 @@ p, li { white-space: pre-wrap; }
       <height>301</height>
      </rect>
     </property>
-    <widget class="QWidget" name="verticalStackedWidget_2Page1" native="true">
+    <widget class="QWidget" name="verticalStackedWidget_2Page1">
      <layout class="QGridLayout" name="image_layout"/>
     </widget>
    </widget>
@@ -202,7 +202,7 @@ p, li { white-space: pre-wrap; }
     </item>
    </layout>
   </widget>
-  <widget class="QPushButton" name="add_log_entry">
+  <widget class="QPushButton" name="add_elog_entry">
    <property name="geometry">
     <rect>
      <x>80</x>

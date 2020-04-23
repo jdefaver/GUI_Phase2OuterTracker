@@ -25,7 +25,7 @@ class PowerDialog(AbstractAssemblyDialog):
             {"text": "test 3", "image": 'assembly_images/test_3.png'}
         ]
         title = f"Connecting module with barcode {self.module.barcode} to power at {self.geo_data['pwr_services_channel']}"
-        self.guide = GuideAssembly.GuideAssembly(self, guide, proceed_callback = self.proceed, title = title)
+        self.guide = GuideAssembly.GuideAssembly(self, barcode, guide, proceed_callback = self.proceed, title = title)
         self.layout.addWidget(self.guide)
         self.layout.setCurrentIndex(1)
 
