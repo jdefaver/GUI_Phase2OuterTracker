@@ -232,7 +232,7 @@ class ModuleButton(QPushButton):
         self.module = self.db_session.query(ExternalModule).filter(ExternalModule.status.has(ModuleStatus.detid == detid)).first()
         self.geo_data = self.geometry.loc[detid]
 
-        self.setAutoFillBackground(True)
+        self.color = None
         if self.module:
             text = f"{detid}\n{self.module.barcode}\n{self.geo_data['mfb']}"
             self.setText(text)
@@ -245,19 +245,20 @@ class ModuleButton(QPushButton):
     def process_status(self):
         if self.module:
             status = self.module.status
-            p = self.palette()
             if status.test_status:
                 if status.test_status == "ok":
-                    p.setColor(self.backgroundRole(), Qt.green)
+                    self.color = "green"
                 else:
-                    p.setColor(self.backgroundRole(), Qt.red)
+                    self.color = "red"
             else:
-                p.setColor(self.backgroundRole(), Qt.yellow)
-            self.setPalette(p)
+                self.color = "yellow"
+            self.setStyleSheet("QWidget {background-color: "+self.color+"}")
 
 
     def highlight(self):
-        self.setStyleSheet("QWidget {border: 2px solid red}")
+        style = "QWidget {border: 3px solid red"+(f"; background-color: {self.color}" if self.color else "")+"}"
+        self.setStyleSheet(style)
 
     def normal(self):
-        QTimer.singleShot(300, lambda: self.setStyleSheet(""))
+        style = "QWidget {background-color: "+self.color+"}" if self.color else ""
+        self.setStyleSheet(style)

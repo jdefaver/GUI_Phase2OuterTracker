@@ -74,7 +74,6 @@ class ModuleBrowser(QWidget):
                 text += module.status.markdown
                 text += "\n### Geometry data"
                 mgeo = self.geometry.loc[module.status.detid]
-                # text += f"\n * Optical bundle: {mgeo.mfb} on service {mgeo.opt_services_channel}"
                 text += MGeometry(mgeo).markdown
             if(module.logs):
                 text += "\n### Log Entries"

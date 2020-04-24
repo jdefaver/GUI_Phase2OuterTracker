@@ -3,6 +3,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.uic import *
 from sqlalchemy.sql import func
+from markdown import markdown
 
 from local_database_definitions import LogEvent
 import logging
@@ -19,6 +20,7 @@ class GuideAssembly(QWidget):
         self.previous_button.clicked.connect(self.previous_step)
         self.previous_button.setEnabled(False)
         self.add_elog_entry.clicked.connect(self.save_elog)
+        self.cancel.clicked.connect(self.close)
 
         if title is not None:
             self.assembly_title.setText(title)
@@ -27,6 +29,8 @@ class GuideAssembly(QWidget):
             self.proceed_button.clicked.connect(proceed_callback)
         except TypeError:
             logging.warning("No callback given for next step in assembly")
+
+        self.show_elog_history()
 
         for step in guide:
             tw = QTextBrowser(self)
@@ -66,13 +70,18 @@ class GuideAssembly(QWidget):
 
     def save_elog(self):
         if self.elog_text.toPlainText().strip():
-            log_event = LogEvent(barcode = self.barcode, text = self.elog_text.toPlainText(), time =  func.now())
+            log_event = LogEvent(barcode = self.barcode, text = self.elog_text.toPlainText().strip(), time =  func.now())
             self.db_session.add(log_event)
             self.db_session.commit()
             self.elog_text.setPlainText("")
             QMessageBox.information(self, "OK", "Your elog entry was saved")
         else:
             QMessageBox.warning(self, "Failure", "Cannot save an empty elog entry")
+        
+        self.show_elog_history()
 
-
-
+    def show_elog_history(self):
+        events = self.db_session.query(LogEvent).filter(LogEvent.barcode == self.barcode).order_by(LogEvent.time).all()
+        text = "### Previous log entries\n\n"
+        text += "\n".join(f" * {e.time}: {e.text}" for e in events)
+        self.previous_elogs.setHtml(markdown(text))
