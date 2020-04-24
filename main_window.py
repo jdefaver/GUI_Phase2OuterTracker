@@ -18,11 +18,11 @@ class DeeBuilder(QMainWindow):
     tabs_files = {
             "browse modules": ModuleBrowser,
             "assembly status": AssemblyStatus,
-            "assembly": Assembly,
-            "start assembly": StartAssembly,
+            # "assembly": Assembly,
+            # "start assembly": StartAssembly,
             # "guide": GuideAssembly,
-            "setup FC7": SetupFC7,
-            "new issue": NewIssue
+            # "setup FC7": SetupFC7,
+            # "new issue": NewIssue
             }
 
     def __init__(self):

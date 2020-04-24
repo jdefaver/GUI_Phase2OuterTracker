@@ -9,6 +9,7 @@ from PyQt5.uic import *
 
 from local_database_definitions import LogEvent, ModuleStatus, ExternalModule
 from Module import Module
+from geometry import MGeometry
 
 from assembly_dialogs import *
 
@@ -67,28 +68,42 @@ class AssemblyStatus(QWidget):
         self.modules = self.db_session.query(ExternalModule).filter(ExternalModule.status.has(ModuleStatus.detid.in_(detids_ids))).all()
         self.modules = {Module(module, self.detids.loc[module.status.detid]) for module in self.modules}
         
-        complete, incomplete, empty = self.process_bundles()
+        complete, incomplete, to_connect_optical, empty = self.process_bundles()
         next_detid, next_bundle = self.next_bundle(empty)
         to_replace = self.to_replace()
         to_continue = self.to_continue()
 
         if incomplete:
-            self.add_row(QLabel("Incomplete bundles"))
+            title = "Incomplete bundles"
+            self.add_row(self.title_row(title))
             for bundle, detids in incomplete.items():
+                self.add_row(QLabel(f"Bundle {bundle}:"))
                 for detid in detids:
                     self.add_row(QLabel(str(detid)), AssemblyButton("Install", self, detid, "screw"))
 
+        if to_connect_optical:
+            title = "Full bundle ready for optical connection"
+            self.add_row(self.title_row(title))
+            for bundle, detids in to_connect_optical.items():
+                self.add_row(QLabel(f"Bundle {bundle}:"))
+                for detid in detids:
+                    self.add_row(QLabel(str(detid)), AssemblyButton("Connect", self, detid, "Connect optics"))
+
+
         if next_detid:
-            self.add_row(QLabel("Next bundle to start"))
-            self.add_row(QLabel(str(next_detid)), AssemblyButton("Start new", self, next_detid, "screw"))
+            title = "Next bundle to start"
+            self.add_row(self.title_row(title))
+            self.add_row(QLabel(f"{next_detid} in bundle {next_bundle}"), AssemblyButton("Start new", self, next_detid, "screw"))
 
         if to_replace:
-            self.add_row(QLabel("Modules to replace"))
+            title = "Modules to replace"
+            self.add_row(self.title_row(title))
             for mod in to_replace:
                 self.add_row(QLabel(str(mod.detid)), AssemblyButton("Replace", self, mod.detid, "replace"))
 
         if to_continue:
-            self.add_row(QLabel("Needing more work"))
+            title = "Installation in progress"
+            self.add_row(self.title_row(title))
             for mod in to_continue:
                     text = f"{mod.detid}, next step: {mod.next_step}"
                     self.add_row(QLabel(text), AssemblyButton("Proceed", self, mod.detid, mod.next_step))
@@ -117,8 +132,8 @@ class AssemblyStatus(QWidget):
             for detid in detids:
                 if self.detids.loc[detid]['ring'] > max_ring:
                     max_ring = self.detids.loc[detid]['ring']
-                if self.detids.loc[detid]['ring'] == max_ring and abs(self.detids.loc[detid]['module_phi_deg'] - 90) < central_phi:
-                    central_phi =  abs(self.detids.loc[detid]['module_phi_deg'] - 90)
+                if self.detids.loc[detid]['ring'] == max_ring and abs(self.detids.loc[detid]['module_assembly_phi_deg'] - 90) < central_phi:
+                    central_phi =  abs(self.detids.loc[detid]['module_assembly_phi_deg'] - 90)
                     best_detid = detid
                     best_bundle = bundle
 
@@ -129,12 +144,20 @@ class AssemblyStatus(QWidget):
         determine bundles with some modules not yet screwed
         """
         to_fill = {}
+        to_connect_optical = {}
         full = []
         dee_bundles = self.detids.reset_index().sort_values(by='ring', ascending=False).groupby('mfb')['Module_DetId/i'].apply(list).to_dict()
         bundles_installed = defaultdict(list)
-        for module in sorted(self.modules, key=lambda m: -self.geometry.loc[m.status.detid]['ring']):
-            bundle = self.geometry.loc[module.status.detid]['mfb']
+        bundles_power = defaultdict(list)
+        for module in sorted(self.modules, key=lambda m: -self.detids.loc[m.status.detid]['ring']):
+            bundle = self.detids.loc[module.status.detid]['mfb']
+            if module.status.pwr_status != None and module.status.opt_status is None:
+                bundles_power[bundle].append(module.status.detid)
             bundles_installed[bundle].append(module.status.detid)
+
+        for bundle, detids in bundles_power.items():
+            if len(detids) == len(dee_bundles[bundle]):
+                to_connect_optical[bundle] = detids
 
         for bundle, detids in bundles_installed.items():
             if len(detids) != len(dee_bundles[bundle]):
@@ -142,8 +165,8 @@ class AssemblyStatus(QWidget):
             else:
                 full.append(bundle)
             dee_bundles.pop(bundle)
-            
-        return full, to_fill, dee_bundles
+
+        return full, to_fill, to_connect_optical, dee_bundles
 
     def clear_display(self):
         """
@@ -172,11 +195,18 @@ class AssemblyStatus(QWidget):
 
     def add_row(self, w1, w2 = None):
         if w2 is None:
-            self.next_layout.addWidget(w1, self.next_steps_table_rows, 0, 1, 2, Qt.AlignCenter)
+            self.next_layout.addWidget(w1, self.next_steps_table_rows, 0, 1, 2)
         else:
             self.next_layout.addWidget(w1, self.next_steps_table_rows, 0)
             self.next_layout.addWidget(w2, self.next_steps_table_rows, 1)
         self.next_steps_table_rows += 1
+
+    def title_row(self, text):
+        title_font = QFont('SansSerif', 16)
+        title = QLabel(text)
+        title.setFont(title_font)
+        title.setStyleSheet("QLabel {padding: 15px 0px 0px 0px;}")
+        return title
 
     def go_to_assembly(self):
         sender = self.sender()
@@ -186,7 +216,7 @@ class AssemblyStatus(QWidget):
         elif sender.next_step == "Connect power":
             dialog = PowerDialog(self, sender.detid)
         elif sender.next_step == "Connect optics":
-            pass
+            dialog = OpticalDialog(self, sender.detid)
         elif sender.next_step == "Test":
             pass
 
@@ -226,7 +256,7 @@ class ModuleButton(QPushButton):
     def __init__(self, parent, detid):
         super().__init__(parent)
 
-        self.geometry = parent.geometry
+        self.geometry = parent.detids
         self.db_session = parent.db_session
 
         self.module = self.db_session.query(ExternalModule).filter(ExternalModule.status.has(ModuleStatus.detid == detid)).first()
@@ -239,8 +269,28 @@ class ModuleButton(QPushButton):
         else:
             text = f"{detid}\n\n{self.geo_data['mfb']}"
             self.setText(text)
+        self.setFont(QFont('SansSerif', 8))
 
         self.process_status()
+
+        tip_text = f"Data for module at detid {detid}"
+        tip_text += "\n\nGeometry data"
+        mgeo = self.geometry.loc[detid]
+        tip_text += MGeometry(mgeo).markdown
+        if self.module:
+            tip_text += "\nModule data"
+            tip_text += self.module.markdown
+            if(self.module.status):
+                tip_text += "\n\nInstallation status"
+                tip_text += self.module.status.markdown
+                tip_text += "\n\nGeometry data"
+                mgeo = self.geometry.loc[detid]
+                tip_text += MGeometry(mgeo).markdown
+            if(self.module.logs):
+                tip_text += "\n\nLog Entries"
+                for log in self.module.logs:
+                    tip_text += "\n * "+str(log)
+        self.setToolTip(tip_text)
 
     def process_status(self):
         if self.module:

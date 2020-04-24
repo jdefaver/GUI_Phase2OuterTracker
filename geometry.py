@@ -12,7 +12,8 @@ class MGeometry(pd.Series):
  * section: {self.module_section}
  * Layer:{self.module_layer} (Z: {self.module_z_mm:.2f}mm)
  * Ring: {self.module_ring} (R: {self.radius_mm:.2f}mm)
- * Phi: {self.module_phi_deg:.2f}
+ * Absolute phi: {self.module_phi_deg:.2f}
+ * Corrected phi: {self.module_assembly_phi_deg:.2f}
  * MFB: {self.mfb} on channel {self.opt_services_channel}
  * Power channel: {self.pwr_services_channel}  
         """
@@ -202,7 +203,7 @@ class Geometry(pd.DataFrame):
         """Module type exact match"""
         return self[self["mfc_type"] == mtype]
 
-    def full_selector(self, side, layer, surface, up_down, fix_phi = False):
+    def full_selector(self, side, layer, surface, up_down):
         odd_surfaces_first_index = 1
         even_surfaces_first_index = 0
         if side == "-":
@@ -233,25 +234,29 @@ class Geometry(pd.DataFrame):
 
         temp = pd.concat(to_keep)
 
-        if fix_phi and ((side == "+" and surface%2) or (side == "-" and not surface%2)):
+        temp = temp.up_down(up_down)
+
+        temp["module_assembly_phi_deg"] = temp["module_phi_deg"]
+
+        if (side == "+" and surface%2) or (side == "-" and not surface%2):
             temp = temp.flip_hz()
 
-        if fix_phi and up_down == "down":
+        if up_down == "down":
             temp = temp.bring_up()
 
-        return temp.up_down(up_down)
+        return temp
 
     def flip_hz(self):
         """layers 1 and 3 have to be flipped horizontally"""
         temp = deepcopy(self)
-        temp["module_phi_deg"] = 180 - temp["module_phi_deg"]
-        return temp.sort_values(by=['module_phi_deg'])
+        temp["module_assembly_phi_deg"] = 180 - temp["module_assembly_phi_deg"]
+        return temp.sort_values(by=['module_assembly_phi_deg'])
 
     def bring_up(self):
         """down dees have to be rotated"""
         temp = deepcopy(self)
-        temp["module_phi_deg"] = temp["module_phi_deg"] - 180
-        return temp.sort_values(by=['module_phi_deg'])
+        temp["module_assembly_phi_deg"] = temp["module_assembly_phi_deg"] - 180
+        return temp.sort_values(by=['module_assembly_phi_deg'])
 
     def get_by_detid(self, detid):
         return self.loc[detid]

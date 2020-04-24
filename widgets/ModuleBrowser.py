@@ -43,6 +43,7 @@ class ModuleBrowser(QWidget):
 
         self.db_session = parent.db_session
         self.geometry = parent.geometry
+        self.detids = None
 
         self.fill_table()
 
@@ -73,7 +74,7 @@ class ModuleBrowser(QWidget):
                 text += "\n### Installation status"
                 text += module.status.markdown
                 text += "\n### Geometry data"
-                mgeo = self.geometry.loc[module.status.detid]
+                mgeo = self.detids.loc[module.status.detid]
                 text += MGeometry(mgeo).markdown
             if(module.logs):
                 text += "\n### Log Entries"
@@ -139,7 +140,8 @@ class ModuleBrowser(QWidget):
         layer = self.dee_layer.currentText()
         surface = self.dee_surface.currentText()
         vertical = self.dee_vertical.currentText()
-        detids = tuple(self.geometry.full_selector(side, int(layer), int(surface), vertical).index.tolist())
+        self.detids =  self.geometry.full_selector(side, int(layer), int(surface), vertical)
+        detids = tuple(self.detids.index.tolist())
         modules = self.db_session.query(ExternalModule).filter(ExternalModule.status.has(ModuleStatus.detid.in_(detids))).all()
         self.fill_table(modules)
 
