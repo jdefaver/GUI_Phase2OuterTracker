@@ -12,15 +12,12 @@ from Module import Module
 from geometry import MGeometry
 
 from assembly_dialogs import *
+from widgets.DeeBaseWidget import DeeBaseWidget
 
-class AssemblyStatus(QWidget):
+class AssemblyStatus (DeeBaseWidget):
     def __init__(self, parent):
         super().__init__(parent)
         ui = loadUi('widgets_ui/assembly_status.ui', self) 
-
-        self.parent = parent
-        self.geometry = parent.geometry
-        self.db_session = parent.db_session
 
         self.select_dee.clicked.connect(self.show_dee_status)
 
@@ -65,7 +62,7 @@ class AssemblyStatus(QWidget):
     def compute_next_steps(self):
         self.clear_next_steps()
         detids_ids = tuple(self.detids.index.tolist())
-        self.modules = self.db_session.query(ExternalModule).filter(ExternalModule.status.has(ModuleStatus.detid.in_(detids_ids))).all()
+        self.modules = self.modules_from_detids(detids_ids)
         self.modules = {Module(module, self.detids.loc[module.status.detid]) for module in self.modules}
         
         complete, incomplete, to_connect_optical, empty = self.process_bundles()
@@ -79,7 +76,12 @@ class AssemblyStatus(QWidget):
             for bundle, detids in incomplete.items():
                 self.add_row(QLabel(f"Bundle {bundle}:"))
                 for detid in detids:
-                    self.add_row(QLabel(str(detid)), AssemblyButton("Install", self, detid, "screw"))
+                    module = self.module_from_detid(detid)
+                    if module:
+                        next_step = "Connect power"
+                    else:
+                        next_step = "screw"
+                    self.add_row(QLabel(str(detid)), AssemblyButton("Proceed", self, detid, next_step))
 
         if to_connect_optical:
             title = "Full bundle ready for optical connection"
@@ -153,15 +155,19 @@ class AssemblyStatus(QWidget):
             bundle = self.detids.loc[module.status.detid]['mfb']
             if module.status.pwr_status != None and module.status.opt_status is None:
                 bundles_power[bundle].append(module.status.detid)
-            bundles_installed[bundle].append(module.status.detid)
+            status = "ok" if module.status.pwr_status != None else "pwr_missing"
+            bundles_installed[bundle].append((module.status.detid, status))
 
         for bundle, detids in bundles_power.items():
             if len(detids) == len(dee_bundles[bundle]):
                 to_connect_optical[bundle] = detids
 
         for bundle, detids in bundles_installed.items():
+            power_missing = [d[0] for d in detids if d[1] == "pwr_missing"]
             if len(detids) != len(dee_bundles[bundle]):
-                to_fill[bundle] = [detid for detid in dee_bundles[bundle] if detid not in detids]
+                to_fill[bundle] = [detid for detid in dee_bundles[bundle] if detid not in [d[0] for d in detids]]
+            elif len(power_missing) != 0:
+                to_fill[bundle] = power_missing
             else:
                 full.append(bundle)
             dee_bundles.pop(bundle)

@@ -8,8 +8,9 @@ from PyQt5.uic import *
 from geometry import MGeometry
 
 from local_database_definitions import LogEvent, ModuleStatus, ExternalModule
+from widgets.DeeBaseWidget import DeeBaseWidget
 
-class ModuleBrowser(QWidget):
+class ModuleBrowser (DeeBaseWidget):
 
     actions_nice = {
         "screwed": "screwed",
@@ -41,8 +42,6 @@ class ModuleBrowser(QWidget):
         self.scanning = False
         self.barcode_chars = []
 
-        self.db_session = parent.db_session
-        self.geometry = parent.geometry
         self.detids = None
 
         self.fill_table()
@@ -142,7 +141,7 @@ class ModuleBrowser(QWidget):
         vertical = self.dee_vertical.currentText()
         self.detids =  self.geometry.full_selector(side, int(layer), int(surface), vertical)
         detids = tuple(self.detids.index.tolist())
-        modules = self.db_session.query(ExternalModule).filter(ExternalModule.status.has(ModuleStatus.detid.in_(detids))).all()
+        modules = self.modules_from_detids(detids)
         self.fill_table(modules)
 
 
