@@ -14,7 +14,7 @@ class ScrewDialog (AbstractAssemblyDialog):
     def __init__(self, parent, detid):
         super().__init__(parent, detid)
 
-        self.good_modules = self.db_session.query(ExternalModule).filter(ExternalModule.status == None)
+        self.good_modules = self.db_session.query(ExternalModule).filter(ExternalModule.status == None).filter(ExternalModule.location == 'Louvain')
         self.good_modules = self.good_modules.filter(ExternalModule.module_type == self.geo_data["type"])
         self.good_modules = self.good_modules.filter(ExternalModule.module_thickness == self.geo_data["sensor_spacing_mm"])
         self.good_modules = self.good_modules.all()
