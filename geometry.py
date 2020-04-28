@@ -1,6 +1,7 @@
 import re
 import pandas as pd
 from copy import deepcopy
+from collections import defaultdict
 
 class MGeometry(pd.Series):
     def __init__(self, series):
@@ -23,6 +24,8 @@ class Geometry(pd.DataFrame):
     """
     Load and filter module list from csv files
     """
+
+    surfaces_dict = {1288.6: 1, 1288.67: 1, 1303.42: 2, 1303.49: 2, 1320.11: 3, 1320.18: 3, 1334.93: 4, 1335.0: 4, 1526.8: 1, 1526.87: 1, 1541.62: 2, 1541.69: 2, 1558.31: 3, 1558.38: 3, 1573.13: 4, 1573.2: 4, 1829.1: 1, 1830.2: 1, 1830.27: 1, 1845.02: 2, 1845.1: 2, 1846.2: 2, 1861.71: 3, 1861.78: 3, 1876.53: 4, 1876.61: 4, 2191.89: 1, 2192.99: 1, 2193.06: 1, 2207.81: 2, 2207.89: 2, 2208.99: 2, 2224.49: 3, 2224.57: 3, 2239.32: 4, 2239.39: 4, 2625.7: 1, 2626.8: 1, 2626.87: 1, 2641.62: 2, 2641.7: 2, 2642.8: 2, 2657.2: 3, 2658.3: 3, 2658.38: 3, 2673.13: 4, 2673.2: 4, 2674.3: 4, -1288.67: 1, -1288.6: 1, -1288.59: 1, -1303.5: 2, -1303.49: 2, -1303.42: 2, -1320.18: 3, -1320.11: 3, -1335.01: 4, -1335.0: 4, -1334.93: 4, -1526.87: 1, -1526.8: 1, -1526.79: 1, -1541.7: 2, -1541.69: 2, -1541.62: 2, -1558.38: 3, -1558.31: 3, -1558.3: 3, -1573.2: 4, -1573.13: 4, -1830.27: 1, -1830.2: 1, -1830.19: 1, -1829.1: 1, -1846.2: 2, -1845.1: 2, -1845.09: 2, -1845.02: 2, -1861.78: 3, -1861.71: 3, -1861.7: 3, -1876.61: 4, -1876.53: 4, -2193.06: 1, -2192.99: 1, -2191.89: 1, -2208.99: 2, -2207.89: 2, -2207.81: 2, -2224.57: 3, -2224.49: 3, -2239.39: 4, -2239.32: 4, -2626.87: 1, -2626.8: 1, -2625.7: 1, -2642.8: 2, -2641.7: 2, -2641.62: 2, -2658.38: 3, -2658.3: 3, -2657.2: 3, -2674.3: 4, -2673.2: 4, -2673.13: 4}
     
     radius = {
         15: 1095.000,
@@ -74,11 +77,14 @@ class Geometry(pd.DataFrame):
             to_drop = [col for col in m_to_dtc.columns if '_detids' in col]
             m_to_dtc = m_to_dtc.drop(axis = 1, columns = to_drop)
 
-        return cls(m_to_dtc).cleanup().add_radius()
+        return cls(m_to_dtc).cleanup().add_radius().tedd_only().add_surfaces()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)       
         
+    def tedd_only(self):
+        return self[self["module_section"].isin(["TEDD_1", "TEDD_2"])]
+
     def cleanup(self):
         """
         * remove extra characters in columns names and make them lowercase
@@ -117,38 +123,6 @@ class Geometry(pd.DataFrame):
         else:
             return self.ted_type(2).layer(layer_id - 2)
     
-    def surface_tedd1(self, surface_number):
-        """Surfaces from 1 (inside) to 4 (outside) in tedd 1"""
-        temp = deepcopy(self)
-        if surface_number <= 2:
-            temp = temp.odd()
-        else:
-            temp = temp.even()
-
-        if surface_number%2:
-            return temp.plane_side(0)
-        else:
-            return temp.plane_side(1)
-
-    def surface_tedd2(self, surface_number):
-        """Surfaces from 1 (inside) to 4 (outside) in tedd 2"""
-        temp = deepcopy(self)
-        if surface_number <= 2:
-            temp = temp.even()
-        else:
-            temp = temp.odd()
-
-        if surface_number%2:
-            return temp.plane_side(0)
-        else:
-            return temp.plane_side(1)
-
-    def surface(self, surface_number, ted_type):
-        if ted_type == 1:
-            return self.surface_tedd1(surface_number)
-        else:
-            return self.surface_tedd2(surface_number)
-
     def even(self):
         """Planes withe even ring number"""
         return self[self["module_ring"] % 2 == 0]
@@ -171,19 +145,6 @@ class Geometry(pd.DataFrame):
             return self[~self["dtc_name"].str.startswith('neg_')]
         else:
             return None
-        
-    def plane_side(self, side_index):
-        """Side of a single plane based on phi angle (odd or even indices for each ring)"""
-        to_keep =  []
-        for ring in self['module_ring'].unique():
-            to_keep.append(self[self["module_ring"] == ring].sort_values(by=['module_phi_deg']).iloc[1-side_index::2])
-        return pd.concat(to_keep)
-    
-    def plane_relative_side(self, which):
-        if which == "inside":
-            return self.plane_side(0)
-        else:
-            return self.plane_side(1)
 
     def up(self):
         """Up side (positive phi)"""
@@ -203,6 +164,47 @@ class Geometry(pd.DataFrame):
         """Module type exact match"""
         return self[self["mfc_type"] == mtype]
 
+    def add_index_in_ring(self):
+        pass
+
+    def add_surfaces(self):
+        self["surface"] = -1
+        self["surface"] = self["module_z_mm"].map(self.surfaces_dict)
+        return self
+
+    def add_surfaces_slow(self):
+        """
+        add a column with the surface index (1 to 4) to make dee selection easier
+        """
+
+        odd_surfaces_first_index = 1
+        even_surfaces_first_index = 0
+        temps = []
+        for side in ["+", "-"]:
+            if side == "-":
+                odd_surfaces_first_index = 0
+                even_surfaces_first_index = 1
+
+            for layer in range(1,6):
+                for surface in range(1, 5):
+                    temp = self.ted_side(side).full_layer(layer)
+                    temp["surface"] = -1
+                    # if surface <= 2:
+                    #     temp = temp.odd_even("odd")
+                    # else:
+                    #     temp = temp.odd_even("even")
+
+                    first_index = odd_surfaces_first_index if surface%2 else even_surfaces_first_index  
+                    for ring in self['module_ring'].unique():
+                        tempi = deepcopy(temp)
+                        tempi = tempi[tempi["module_ring"] == ring].sort_values(by=['module_phi_deg']).iloc[first_index::2]
+                        detids = tempi.index.tolist()
+                        tempi.loc[detids, "surface"] = surface
+                        temps.append(tempi)
+
+        return pd.concat(temps)
+
+
     def full_selector(self, side, layer, surface, up_down):
         odd_surfaces_first_index = 1
         even_surfaces_first_index = 0
@@ -214,18 +216,12 @@ class Geometry(pd.DataFrame):
         if layer >= 3:
             tedd_type = 2
 
-        first_ring_first_disk = "odd"
-        first_ring_second_disk = "even"
-        if tedd_type == 2:
-            first_ring_first_disk = "even"
-            first_ring_second_disk = "odd"
-
         temp = self.ted_side(side).full_layer(layer)
 
         if surface <= 2:
-            temp = temp.odd_even(first_ring_first_disk)
+            temp = temp.odd_even("odd")
         else:
-            temp = temp.odd_even(first_ring_second_disk)
+            temp = temp.odd_even("even")
 
         first_index = odd_surfaces_first_index if surface%2 else even_surfaces_first_index  
         to_keep =  []
@@ -269,12 +265,21 @@ class Geometry(pd.DataFrame):
 
 if __name__ == "__main__":
 
-    test = Geometry.from_csv("ModulesToDTCsPosOuter.csv", "ModulesToDTCsNegOuter.csv").cleanup().add_radius()
-    print("** Layer 1, surface 1, up**")
-    test.ted_side("+").full_layer(1).surface(1, 1).up_down("up").flip_hz().list_by_ring()
-    print("** Layer 1, surface 1, down**")
-    test.ted_side("+").full_layer(1).surface(1, 1).up_down("down").flip_hz().bring_up().list_by_ring()
-    print("** Layer 1, surface 2**")
-    test.ted_side("+").full_layer(1).surface(2, 1).up_down("up").list_by_ring()
-    # print("** Layer 3 **")
-    # test.ted_side("+").full_layer(3).surface(1, 2).up_down("up").list_by_ring()
+    modules_to_dtc_files = ["ModulesToDTCsPosOuter.csv", "ModulesToDTCsNegOuter.csv"]
+    aggregation_files = ["AggregationPatternsPosOuter.csv", "AggregationPatternsNegOuter.csv"]
+    detids_file = "DetId_modules_list.csv"
+    geometry = Geometry.from_csv(modules_to_dtc_files, aggregation_files, detids_file)
+
+    surfaces = {}
+    for side in ["+", "-"]:
+        for layer in range(1,6):
+            for surface in range(1,5):
+                detids = pd.concat(geometry.full_selector(side, layer, surface, v) for v in ["up", "down"])
+                # grouped = detids.groupby(['module_z_mm'])["module_z_mm"].count().to_dict()
+                grouped = detids.groupby(['surface'])["surface"].count().to_dict()
+                print("Dee:", side, layer, surface)
+                print("Z: "+", ".join([str(k) for k in grouped.keys()]))
+                # for k, value in grouped.items():
+                #     surfaces[k] = surface
+    
+
