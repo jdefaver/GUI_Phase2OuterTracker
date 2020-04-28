@@ -11,6 +11,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 from widgets.DeeBaseWidget import DeeBaseWidget
+from functools import partial
 
 def make_fifo(fifo_path):
     try:
@@ -60,10 +61,12 @@ class RunTests (DeeBaseWidget):
         super().__init__(parent)
         ui = loadUi('widgets_ui/run_tests.ui', self) 
 
+        self.modules = modules
+
         self.proceed_button.clicked.connect(proceed_callback)
 
-        self.start_test_1.clicked.connect(self.run_test_1)
-        self.start_test_2.clicked.connect(self.run_test_2)
+        self.start_test_1.clicked.connect(partial(self.run_test, 'test1.py', ()))
+        self.start_test_2.clicked.connect(partial(self.run_test, 'test2.py', ()))
 
         self.fifo_path = '/tmp/my_fifo'
         make_fifo(self.fifo_path)
@@ -71,9 +74,9 @@ class RunTests (DeeBaseWidget):
         self.plot = DynamicMplCanvas(self, [0], [0])
         self.mpl_layout.addWidget(self.plot)
 
-    def start_and_attach_pipes(self, executable):
+    def start_and_attach_pipes(self, executable, arguments = ()):
         path = os.path.realpath(executable)
-        process =  subprocess.Popen([path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='UTF-8')
+        process =  subprocess.Popen([path, *arguments], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='UTF-8')
 
         self.stdout_reader = PipeReader(process.stdout, self.append_to_output)
         self.stderr_reader = PipeReader(process.stderr, self.append_to_errors)
@@ -83,9 +86,9 @@ class RunTests (DeeBaseWidget):
         self.pipe_reader = PipeReader(self.pipe, self.on_pipe_message)
         self.pipe_reader.finished.connect(self.on_complete)
 
-    def run_test_1(self):
+    def run_test(self, executable, arguments = ()):
         self.plot.cleanup()
-        self.start_and_attach_pipes('test1.py')
+        self.start_and_attach_pipes(executable, arguments)
         self.start_test_1.setEnabled(False)
         self.start_test_2.setEnabled(False)
 

@@ -58,4 +58,9 @@ class TestsDialog (AbstractAssemblyDialog):
         self.layout.setCurrentIndex(2)
 
     def finish(self):
+        # FIXME : this will need to reflect the true test status
+        for module in self.modules:
+            module.status.tested = func.now()
+            module.status.test_status = "ok"
+        self.db_session.commit()
         self.close()
