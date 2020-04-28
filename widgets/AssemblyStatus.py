@@ -224,7 +224,7 @@ class AssemblyStatus (DeeBaseWidget):
         elif sender.next_step == "Connect optics":
             dialog = OpticalDialog(self, sender.detid)
         elif sender.next_step == "Test":
-            pass
+            dialog = TestsDialog(self, sender.detid)
 
         if dialog:
             dialog.exec()

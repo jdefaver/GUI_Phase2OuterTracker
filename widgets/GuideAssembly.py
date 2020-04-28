@@ -16,11 +16,16 @@ class GuideAssembly(QWidget):
         self.db_session = parent.db_session
         self.barcode = barcode
 
-        self.next_button.clicked.connect(self.next_step)
-        self.previous_button.clicked.connect(self.previous_step)
-        self.previous_button.setEnabled(False)
+        if len(guide) > 1:
+            self.next_button.clicked.connect(self.next_step)
+            self.previous_button.clicked.connect(self.previous_step)
+            self.previous_button.setEnabled(False)
+        else:
+            self.next_button.setEnabled(False)
+            self.previous_button.setEnabled(False)
+        
         self.add_elog_entry.clicked.connect(self.save_elog)
-        self.cancel.clicked.connect(self.close)
+        self.cancel.clicked.connect(parent.close)
 
         if title is not None:
             self.assembly_title.setText(title)

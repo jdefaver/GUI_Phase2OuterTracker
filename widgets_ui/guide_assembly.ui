@@ -178,7 +178,7 @@ p, li { white-space: pre-wrap; }
      <height>41</height>
     </rect>
    </property>
-   <layout class="QHBoxLayout" name="horizontalLayout">
+   <layout class="QHBoxLayout" name="navigation_layout">
     <item>
      <widget class="QPushButton" name="previous_button">
       <property name="text">
