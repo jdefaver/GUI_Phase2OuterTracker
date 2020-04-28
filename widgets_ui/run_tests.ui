@@ -19,7 +19,7 @@
      <x>30</x>
      <y>30</y>
      <width>160</width>
-     <height>80</height>
+     <height>95</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -54,13 +54,23 @@
    <property name="frameShadow">
     <enum>QFrame::Raised</enum>
    </property>
-   <widget class="QTextBrowser" name="text_logs">
+   <widget class="QTextBrowser" name="output_logs">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>10</y>
       <width>471</width>
-      <height>421</height>
+      <height>281</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QTextBrowser" name="error_logs">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>300</y>
+      <width>471</width>
+      <height>131</height>
      </rect>
     </property>
    </widget>

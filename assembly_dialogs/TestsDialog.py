@@ -32,7 +32,7 @@ class TestsDialog (AbstractAssemblyDialog):
         self.layout.setCurrentIndex(0)
 
     def add_tests(self):
-        self.tests = RunTests.RunTests(self, proceed_callback = self.go_to_cleanup)
+        self.tests = RunTests.RunTests(self, modules = self.modules, proceed_callback = self.go_to_cleanup)
         self.layout.insertWidget(1, self.tests)
 
     def add_instructions_before(self):

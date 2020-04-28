@@ -1,4 +1,6 @@
 *.pyc
 *.un~
 *.csv
+*.db
+*_ignore.*
 tags
