@@ -77,12 +77,15 @@ class Geometry(pd.DataFrame):
             to_drop = [col for col in m_to_dtc.columns if '_detids' in col]
             m_to_dtc = m_to_dtc.drop(axis = 1, columns = to_drop)
 
-        return cls(m_to_dtc).cleanup().add_radius().tedd_only().add_surfaces()
+        return cls(m_to_dtc).cleanup().add_radius().tedd_only().add_surfaces().add_side().add_assembly_phi()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)       
         
     def tedd_only(self):
+        """
+        select detids from tedd only
+        """
         return self[self["module_section"].isin(["TEDD_1", "TEDD_2"])]
 
     def cleanup(self):
@@ -104,6 +107,29 @@ class Geometry(pd.DataFrame):
         self["radius_mm"] = self.apply(lambda row: self.radius.get(row["module_ring"], -1), axis=1)
         return self
     
+    def add_surfaces(self):
+        """
+        add surfaces based on dict of z position. Not very robust but very fast
+        """
+        self["surface"] = -1
+        self["surface"] = self["module_z_mm"].map(self.surfaces_dict)
+        return self
+
+    def add_side(self):
+        self['side'] = "+"
+        self.loc[self["dtc_name"].str.startswith('neg_'), "side"] = "-"
+        return self
+
+    def add_assembly_phi(self):
+        def assembly_phi(phi, surface, side):
+            if phi < 0:
+                phi += 180
+            if (side == "-" and not surface%2) or (side == "+" and surface%2):
+                phi = 180 - phi
+            return phi
+        self["module_assembly_phi_deg"] = self.apply(lambda row: assembly_phi(row["module_phi_deg"], row["surface"], row["side"]), axis=1)
+        return self
+
     def module_ring(self, ring):
         """single module ring"""
         return self[self["module_ring"] == ring]
@@ -117,11 +143,15 @@ class Geometry(pd.DataFrame):
         return self[self["module_layer"] == layer_id]
 
     def full_layer(self, layer_id):
-        """Layer from 1 to 5, ignoring ted type"""
+        """Layer from 1 to 5, ignoring tedd type"""
         if layer_id < 3:
             return self.ted_type(1).layer(layer_id)
         else:
             return self.ted_type(2).layer(layer_id - 2)
+
+    def surface(self, surface):
+        """Surface from 1 (inside) to 4(outside)"""
+        return self[self["surface"] == surface]
     
     def even(self):
         """Planes withe even ring number"""
@@ -164,95 +194,9 @@ class Geometry(pd.DataFrame):
         """Module type exact match"""
         return self[self["mfc_type"] == mtype]
 
-    def add_index_in_ring(self):
-        pass
-
-    def add_surfaces(self):
-        self["surface"] = -1
-        self["surface"] = self["module_z_mm"].map(self.surfaces_dict)
-        return self
-
-    def add_surfaces_slow(self):
-        """
-        add a column with the surface index (1 to 4) to make dee selection easier
-        """
-
-        odd_surfaces_first_index = 1
-        even_surfaces_first_index = 0
-        temps = []
-        for side in ["+", "-"]:
-            if side == "-":
-                odd_surfaces_first_index = 0
-                even_surfaces_first_index = 1
-
-            for layer in range(1,6):
-                for surface in range(1, 5):
-                    temp = self.ted_side(side).full_layer(layer)
-                    temp["surface"] = -1
-                    # if surface <= 2:
-                    #     temp = temp.odd_even("odd")
-                    # else:
-                    #     temp = temp.odd_even("even")
-
-                    first_index = odd_surfaces_first_index if surface%2 else even_surfaces_first_index  
-                    for ring in self['module_ring'].unique():
-                        tempi = deepcopy(temp)
-                        tempi = tempi[tempi["module_ring"] == ring].sort_values(by=['module_phi_deg']).iloc[first_index::2]
-                        detids = tempi.index.tolist()
-                        tempi.loc[detids, "surface"] = surface
-                        temps.append(tempi)
-
-        return pd.concat(temps)
-
 
     def full_selector(self, side, layer, surface, up_down):
-        odd_surfaces_first_index = 1
-        even_surfaces_first_index = 0
-        if side == "-":
-            odd_surfaces_first_index = 0
-            even_surfaces_first_index = 1
-
-        tedd_type = 1
-        if layer >= 3:
-            tedd_type = 2
-
-        temp = self.ted_side(side).full_layer(layer)
-
-        if surface <= 2:
-            temp = temp.odd_even("odd")
-        else:
-            temp = temp.odd_even("even")
-
-        first_index = odd_surfaces_first_index if surface%2 else even_surfaces_first_index  
-        to_keep =  []
-        for ring in self['module_ring'].unique():
-            to_keep.append(temp[temp["module_ring"] == ring].sort_values(by=['module_phi_deg']).iloc[first_index::2])
-
-        temp = pd.concat(to_keep)
-
-        temp = temp.up_down(up_down)
-
-        temp["module_assembly_phi_deg"] = temp["module_phi_deg"]
-
-        if (side == "+" and surface%2) or (side == "-" and not surface%2):
-            temp = temp.flip_hz()
-
-        if up_down == "down":
-            temp = temp.bring_up()
-
-        return temp
-
-    def flip_hz(self):
-        """layers 1 and 3 have to be flipped horizontally"""
-        temp = deepcopy(self)
-        temp["module_assembly_phi_deg"] = 180 - temp["module_assembly_phi_deg"]
-        return temp.sort_values(by=['module_assembly_phi_deg'])
-
-    def bring_up(self):
-        """down dees have to be rotated"""
-        temp = deepcopy(self)
-        temp["module_assembly_phi_deg"] = temp["module_assembly_phi_deg"] - 180
-        return temp.sort_values(by=['module_assembly_phi_deg'])
+        return self.ted_side(side).full_layer(layer).surface(surface).up_down(up_down)
 
     def get_by_detid(self, detid):
         return self.loc[detid]
@@ -275,8 +219,9 @@ if __name__ == "__main__":
         for layer in range(1,6):
             for surface in range(1,5):
                 detids = pd.concat(geometry.full_selector(side, layer, surface, v) for v in ["up", "down"])
-                # grouped = detids.groupby(['module_z_mm'])["module_z_mm"].count().to_dict()
-                grouped = detids.groupby(['surface'])["surface"].count().to_dict()
+                grouped = detids.groupby(['module_z_mm'])["module_z_mm"].count().to_dict()
+                # grouped = detids.groupby(['surface'])["surface"].count().to_dict()
+                # grouped = detids.groupby(['side'])["side"].count().to_dict()
                 print("Dee:", side, layer, surface)
                 print("Z: "+", ".join([str(k) for k in grouped.keys()]))
                 # for k, value in grouped.items():
