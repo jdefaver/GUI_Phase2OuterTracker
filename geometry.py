@@ -115,6 +115,40 @@ class Geometry(pd.DataFrame):
         self["surface"] = self["module_z_mm"].map(self.surfaces_dict)
         return self
 
+    def add_surface_slow(self):
+        """
+        add a column with the surface index (1 to 4) to make dee selection easier
+          * based on module positions in rings, this is very slow but accurate
+          * use only as a cross-check or for updating the surfaces dictionary 
+        """
+
+        odd_surfaces_first_index = 1
+        even_surfaces_first_index = 0
+        temps = []
+        for side in ["+", "-"]:
+            if side == "-":
+                odd_surfaces_first_index = 0
+                even_surfaces_first_index = 1
+
+            for layer in range(1,6):
+                for surface in range(1, 5):
+                    temp = self.ted_side(side).full_layer(layer)
+                    temp["surface"] = -1
+                    if surface <= 2:
+                        temp = temp[self["module_ring"] % 2 == 1]
+                    else:
+                        temp = temp[self["module_ring"] % 2 == 0]
+
+                    first_index = odd_surfaces_first_index if surface%2 else even_surfaces_first_index  
+                    for ring in self['module_ring'].unique():
+                        tempi = deepcopy(temp)
+                        tempi = tempi[tempi["module_ring"] == ring].sort_values(by=['module_phi_deg']).iloc[first_index::2]
+                        detids = tempi.index.tolist()
+                        tempi.loc[detids, "surface"] = surface
+                        temps.append(tempi)
+
+        return pd.concat(temps)
+
     def add_side(self):
         self['side'] = "+"
         self.loc[self["dtc_name"].str.startswith('neg_'), "side"] = "-"
@@ -148,6 +182,12 @@ class Geometry(pd.DataFrame):
             return self.tedd_type(1).layer(layer_id)
         else:
             return self.tedd_type(2).layer(layer_id - 2)
+
+    def odd_even(self, which):
+        if which == "odd":
+            return self[self["module_ring"] % 2 == 1]
+        else:
+            return self[self["module_ring"] % 2 == 0]
 
     def surface(self, surface):
         """Surface from 1 (inside) to 4(outside)"""
