@@ -77,7 +77,7 @@ class Geometry(pd.DataFrame):
             to_drop = [col for col in m_to_dtc.columns if '_detids' in col]
             m_to_dtc = m_to_dtc.drop(axis = 1, columns = to_drop)
 
-        return cls(m_to_dtc).cleanup().add_radius().tedd_only().add_surfaces().add_side().add_assembly_phi()
+        return cls(m_to_dtc).cleanup().add_radius().tedd_only().add_surface().add_side().add_assembly_phi()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)       
@@ -107,7 +107,7 @@ class Geometry(pd.DataFrame):
         self["radius_mm"] = self.apply(lambda row: self.radius.get(row["module_ring"], -1), axis=1)
         return self
     
-    def add_surfaces(self):
+    def add_surface(self):
         """
         add surfaces based on dict of z position. Not very robust but very fast
         """
@@ -134,7 +134,7 @@ class Geometry(pd.DataFrame):
         """single module ring"""
         return self[self["module_ring"] == ring]
     
-    def ted_type(self, ttype):
+    def tedd_type(self, ttype):
         """TEDD_1 or TEDD_2"""
         return self[self["module_section"] == "TEDD_{}".format(ttype)]
     
@@ -145,29 +145,15 @@ class Geometry(pd.DataFrame):
     def full_layer(self, layer_id):
         """Layer from 1 to 5, ignoring tedd type"""
         if layer_id < 3:
-            return self.ted_type(1).layer(layer_id)
+            return self.tedd_type(1).layer(layer_id)
         else:
-            return self.ted_type(2).layer(layer_id - 2)
+            return self.tedd_type(2).layer(layer_id - 2)
 
     def surface(self, surface):
         """Surface from 1 (inside) to 4(outside)"""
         return self[self["surface"] == surface]
     
-    def even(self):
-        """Planes withe even ring number"""
-        return self[self["module_ring"] % 2 == 0]
-    
-    def odd(self):
-        """Planes with odd ring numbers"""
-        return self[self["module_ring"] % 2 == 1]
-
-    def odd_even(self, which):
-        if which == "odd":
-            return self.odd()
-        else:
-            return self.even()
-
-    def ted_side(self, side):
+    def tedd_side(self, side):
         """+ or - side wrt to CMS z"""
         if side == "-":
             return self[self["dtc_name"].str.startswith('neg_')]
@@ -176,27 +162,18 @@ class Geometry(pd.DataFrame):
         else:
             return None
 
-    def up(self):
-        """Up side (positive phi)"""
-        return self[self["module_phi_deg"] > 0]
-    
-    def down(self):
-        """Down side (negative phi)"""
-        return self[self["module_phi_deg"] < 0]
-
     def up_down(self, which):
         if which == "up":
-            return self.up()
+            return self[self["module_phi_deg"] > 0]
         else:
-            return self.down()
+            return self[self["module_phi_deg"] < 0]
     
     def module_type(self, mtype):
         """Module type exact match"""
         return self[self["mfc_type"] == mtype]
 
-
     def full_selector(self, side, layer, surface, up_down):
-        return self.ted_side(side).full_layer(layer).surface(surface).up_down(up_down)
+        return self.tedd_side(side).full_layer(layer).surface(surface).up_down(up_down)
 
     def get_by_detid(self, detid):
         return self.loc[detid]

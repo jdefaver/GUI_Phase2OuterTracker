@@ -45,7 +45,7 @@ class AssemblyStatus (DeeBaseWidget):
         surface = self.dee_surface.currentText()
         vertical = self.dee_vertical.currentText()
         self.detids = self.geometry.full_selector(side, int(layer), int(surface), vertical)
-        detids_by_ring = {ring: self.detids[self.detids["module_ring"] == ring] for ring in np.sort(self.detids['module_ring'].unique())[::-1]}
+        detids_by_ring = {ring: self.detids[self.detids["module_ring"] == ring].sort_values(by="module_assembly_phi_deg", ascending=False) for ring in np.sort(self.detids['module_ring'].unique())[::-1]}
         for ring, detids in detids_by_ring.items():
             r_layout = QHBoxLayout()
             for detid, data in detids.iterrows():
