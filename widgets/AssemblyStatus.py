@@ -65,32 +65,40 @@ class AssemblyStatus (DeeBaseWidget):
         self.modules = self.modules_from_detids(detids_ids)
         self.modules = {Module(module, self.detids.loc[module.status.detid]) for module in self.modules}
         
-        complete, incomplete, to_connect_optical, empty = self.process_bundles()
-        next_detid, next_bundle = self.next_bundle(empty)
+        bundles_status = self.process_bundles()
+
+        next_detid, next_bundle = self.next_bundle(bundles_status.get('empty', {}))
         to_replace = self.to_replace()
         to_continue = self.to_continue()
 
-        if incomplete:
+        if 'incomplete' in bundles_status:
             title = "Incomplete bundles"
             self.add_row(self.title_row(title))
-            for bundle, detids in incomplete.items():
+            for bundle, detids in bundles_status['incomplete'].items():
                 self.add_row(QLabel(f"Bundle {bundle}:"))
                 for detid in detids:
                     module = self.module_from_detid(detid)
-                    if module:
-                        next_step = "Connect power"
+                    if not module:
+                        self.add_row(QLabel(str(detid)), AssemblyButton("Install", self, detid, "screw"))
+                    elif module.status.pwr_status is None:
+                        self.add_row(QLabel(str(detid)), AssemblyButton("Connect power", self, detid, "Connect power"))
                     else:
-                        next_step = "screw"
-                    self.add_row(QLabel(str(detid)), AssemblyButton("Proceed", self, detid, next_step))
+                        ab = AssemblyButton("OK", self, detid, None)
+                        ab.setEnabled(False)
+                        self.add_row(QLabel(str(detid)), ab) 
 
-        if to_connect_optical:
+
+        if 'ready for optics' in bundles_status:
             title = "Full bundle ready for optical connection"
             self.add_row(self.title_row(title))
-            for bundle, detids in to_connect_optical.items():
-                self.add_row(QLabel(f"Bundle {bundle}:"))
-                for detid in detids:
-                    self.add_row(QLabel(str(detid)), AssemblyButton("Connect", self, detid, "Connect optics"))
+            for bundle, detids in bundles_status['ready for optics'].items():
+                self.add_row(QLabel(f"Bundle: {bundle}"), AssemblyButton("Connect", self, detids[0], "Connect optics"))
 
+        if 'ready for tests' in bundles_status:
+            title = "Full bundle ready for testing"
+            self.add_row(self.title_row(title))
+            for bundle, detids in bundles_status['ready for tests'].items():
+                self.add_row(QLabel(f"Bundle: {bundle}"), AssemblyButton("Test", self, detids[0], "Test"))
 
         if next_detid:
             title = "Next bundle to start"
@@ -125,7 +133,6 @@ class AssemblyStatus (DeeBaseWidget):
         determine the next bundle to start screwing
         it should be the one containing the most central module of the most external ring
         """
-        # TODO: this requires that PHI angles are brought back up and flipped if needed
         max_ring = 0
         central_phi = 180
         best_detid = None
@@ -143,36 +150,33 @@ class AssemblyStatus (DeeBaseWidget):
 
     def process_bundles(self):
         """
-        determine bundles with some modules not yet screwed
+        list bundles:
+         * with no modules installed
+         * where some modules are not present / not connected to power
+         * where all are connected to power but not connected to optics = ready for fanout connection
+         * where all are connected to optics but not tested = ready for tests
         """
-        to_fill = {}
-        to_connect_optical = {}
-        full = []
+        bundle_status = defaultdict(dict)
         dee_bundles = self.detids.reset_index().sort_values(by='ring', ascending=False).groupby('mfb')['Module_DetId/i'].apply(list).to_dict()
-        bundles_installed = defaultdict(list)
-        bundles_power = defaultdict(list)
-        for module in sorted(self.modules, key=lambda m: -self.detids.loc[m.status.detid]['ring']):
-            bundle = self.detids.loc[module.status.detid]['mfb']
-            if module.status.pwr_status != None and module.status.opt_status is None:
-                bundles_power[bundle].append(module.status.detid)
-            status = "ok" if module.status.pwr_status != None else "pwr_missing"
-            bundles_installed[bundle].append((module.status.detid, status))
-
-        for bundle, detids in bundles_power.items():
-            if len(detids) == len(dee_bundles[bundle]):
-                to_connect_optical[bundle] = detids
-
-        for bundle, detids in bundles_installed.items():
-            power_missing = [d[0] for d in detids if d[1] == "pwr_missing"]
-            if len(detids) != len(dee_bundles[bundle]):
-                to_fill[bundle] = [detid for detid in dee_bundles[bundle] if detid not in [d[0] for d in detids]]
-            elif len(power_missing) != 0:
-                to_fill[bundle] = power_missing
+        for bundle, detids in dee_bundles.items():
+            modules = self.modules_from_detids(detids)
+            if len(modules) == 0:
+                status = 'empty'
+            elif len(modules) != len(detids):
+                status = 'incomplete'
+            elif any(m.status.pwr_status is None for m in modules):
+                status = 'incomplete'
+            elif all(m.status.opt_status is None for m in modules):
+                status = 'ready for optics'
+            elif all(m.status.tested is None for m in modules):
+                status = 'ready for tests'
+            elif all(m.status.tested is not None for m in modules):
+                status = 'ok'
             else:
-                full.append(bundle)
-            dee_bundles.pop(bundle)
+                status = 'mixed' 
+            bundle_status[status][bundle] = detids
 
-        return full, to_fill, to_connect_optical, dee_bundles
+        return bundle_status
 
     def clear_display(self):
         """
@@ -262,7 +266,7 @@ class ModuleButton(QPushButton):
     def __init__(self, parent, detid):
         super().__init__(parent)
 
-        self.geometry = parent.detids
+        self.geometry = parent.geometry
         self.db_session = parent.db_session
 
         self.module = self.db_session.query(ExternalModule).filter(ExternalModule.status.has(ModuleStatus.detid == detid)).first()
