@@ -79,11 +79,11 @@ class AssemblyStatus (DeeBaseWidget):
                 for detid in detids:
                     module = self.module_from_detid(detid)
                     if not module:
-                        self.add_row(QLabel(str(detid)), AssemblyButton("Install", self, detid, "screw"))
+                        self.add_row(QLabel(str(detid)), AssemblyButton("Install", self, next_step = "screw", detid = detid))
                     elif module.status.pwr_status is None:
-                        self.add_row(QLabel(str(detid)), AssemblyButton("Connect power", self, detid, "Connect power"))
+                        self.add_row(QLabel(str(detid)), AssemblyButton("Connect power", self, next_step = "Connect power", detid = detid))
                     else:
-                        ab = AssemblyButton("OK", self, detid, None)
+                        ab = AssemblyButton("OK", self, next_step = None)
                         ab.setEnabled(False)
                         self.add_row(QLabel(str(detid)), ab) 
 
@@ -92,31 +92,31 @@ class AssemblyStatus (DeeBaseWidget):
             title = "Full bundle ready for optical connection"
             self.add_row(self.title_row(title))
             for bundle, detids in bundles_status['ready for optics'].items():
-                self.add_row(QLabel(f"Bundle: {bundle}"), AssemblyButton("Connect", self, detids[0], "Connect optics"))
+                self.add_row(QLabel(f"Bundle: {bundle}"), AssemblyButton("Connect", self, next_step = "Connect optics", detids = detids))
 
         if 'ready for tests' in bundles_status:
             title = "Full bundle ready for testing"
             self.add_row(self.title_row(title))
             for bundle, detids in bundles_status['ready for tests'].items():
-                self.add_row(QLabel(f"Bundle: {bundle}"), AssemblyButton("Test", self, detids[0], "Test"))
+                self.add_row(QLabel(f"Bundle: {bundle}"), AssemblyButton("Test", self, next_step = "Test", detid = detids[0]))
 
         if next_detid:
             title = "Next bundle to start"
             self.add_row(self.title_row(title))
-            self.add_row(QLabel(f"{next_detid} in bundle {next_bundle}"), AssemblyButton("Start new", self, next_detid, "screw"))
+            self.add_row(QLabel(f"{next_detid} in bundle {next_bundle}"), AssemblyButton("Start new", self, next_step = "screw", detid = next_detid))
 
         if to_replace:
             title = "Modules to replace"
             self.add_row(self.title_row(title))
             for mod in to_replace:
-                self.add_row(QLabel(str(mod.detid)), AssemblyButton("Replace", self, mod.detid, "replace"))
+                self.add_row(QLabel(str(mod.detid)), AssemblyButton("Replace", self, next_step = "replace", detid = mod.detid))
 
         if to_continue:
             title = "Installation in progress"
             self.add_row(self.title_row(title))
             for mod in to_continue:
                     text = f"{mod.detid}, next step: {mod.next_step}"
-                    self.add_row(QLabel(text), AssemblyButton("Proceed", self, mod.detid, mod.next_step))
+                    self.add_row(QLabel(text), AssemblyButton("Proceed", self, next_step = mod.next_step, detid = mod.detid))
 
         self.next_layout.addItem(QSpacerItem(1,1,QSizePolicy.Minimum,QSizePolicy.Expanding), self.next_steps_table_rows, 0)
 
@@ -168,7 +168,7 @@ class AssemblyStatus (DeeBaseWidget):
                 status = 'incomplete'
             elif all(m.status.opt_status is None for m in modules):
                 status = 'ready for optics'
-            elif all(m.status.tested is None for m in modules):
+            elif all(m.status.tested is None for m in modules) and all(m.status.opt_status is not None for m in modules):
                 status = 'ready for tests'
             elif all(m.status.tested is not None for m in modules):
                 status = 'ok'
@@ -219,16 +219,23 @@ class AssemblyStatus (DeeBaseWidget):
         return title
 
     def go_to_assembly(self):
+        """
+        Load the appropriate assembly guide and show dialog
+        """
         sender = self.sender()
-        dialog = None
+        data = sender.assembly_data
         if sender.next_step == "screw":
-            dialog = ScrewDialog(self, sender.detid)
+            dialog = ScrewDialog(self, **data)
         elif sender.next_step == "Connect power":
-            dialog = PowerDialog(self, sender.detid)
+            dialog = PowerDialog(self, **data)
         elif sender.next_step == "Connect optics":
-            dialog = OpticalDialog(self, sender.detid)
+            if "detid" in data:
+                data["detids"] = [data.pop("detid")]
+            dialog = OpticalDialog(self, **data)
         elif sender.next_step == "Test":
-            dialog = TestsDialog(self, sender.detid)
+            dialog = TestsDialog(self, **data)
+        else:
+            dialog = None
 
         if dialog:
             dialog.exec()
@@ -239,10 +246,18 @@ class AssemblyStatus (DeeBaseWidget):
 class AssemblyButton(QPushButton):
     """
     display a button to get to the assembly guide with the right step
+        * next_step is a text string telling what the next step in assembly is
+        * assembly_data is a dictionary of data to be used by the assembly guide
     """
-    def __init__(self, text, parent = None, detid = None, next_step = None):
+    def __init__(self, text, parent = None, *, next_step = None, **assembly_data):
         super().__init__(text, parent)
-        self.detid = detid
+        self.assembly_data = assembly_data
+        if "detid" in assembly_data:
+            self.detids = [assembly_data["detid"]]
+        elif "detids" in assembly_data:
+            self.detids = assembly_data["detids"]
+        else:
+            self.detids = []
         self.parent = parent
         self.next_step = next_step
         try:
@@ -251,10 +266,12 @@ class AssemblyButton(QPushButton):
             logging.warning("Parent class must provide a 'go_to_assembly' method")
 
     def enterEvent(self, event):
-        getattr(self.parent, f"module_button_{self.detid}").highlight()
+        for detid in self.detids:
+            getattr(self.parent, f"module_button_{detid}").highlight()
 
     def leaveEvent(self, event):
-        getattr(self.parent, f"module_button_{self.detid}").normal()
+        for detid in self.detids:
+            getattr(self.parent, f"module_button_{detid}").normal()
         
 
 
@@ -316,7 +333,7 @@ class ModuleButton(QPushButton):
 
 
     def highlight(self):
-        style = "QWidget {border: 3px solid red"+(f"; background-color: {self.color}" if self.color else "")+"}"
+        style = "QWidget {border: 3px solid blue"+(f"; background-color: {self.color}" if self.color else "")+"}"
         self.setStyleSheet(style)
 
     def normal(self):
