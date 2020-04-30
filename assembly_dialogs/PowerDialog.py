@@ -10,10 +10,9 @@ from widgets import GuideAssembly, PickModule
 from assembly_dialogs import AbstractAssemblyDialog
 
 class PowerDialog(AbstractAssemblyDialog):
-    def __init__(self, parent, detid):
-        super().__init__(parent, detid)
+    def __init__(self, parent, **assembly_data):
+        super().__init__(parent, **assembly_data)
 
-        self.module = self.db_session.query(ExternalModule).filter(ExternalModule.status.has(ModuleStatus.detid == self.detid)).first()
         self.pick = PickModule.PickModule(self, [self.module], self.go_to_guide)
         self.layout.addWidget(self.pick)
 

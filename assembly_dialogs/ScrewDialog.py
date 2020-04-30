@@ -11,8 +11,8 @@ from widgets import GuideAssembly, PickModule
 from assembly_dialogs import AbstractAssemblyDialog, PowerDialog
 
 class ScrewDialog (AbstractAssemblyDialog):
-    def __init__(self, parent, detid):
-        super().__init__(parent, detid)
+    def __init__(self, parent, **assembly_data):
+        super().__init__(parent, **assembly_data)
 
         self.good_modules = self.db_session.query(ExternalModule).filter(ExternalModule.status == None).filter(ExternalModule.location == 'Louvain')
         self.good_modules = self.good_modules.filter(ExternalModule.module_type == self.geo_data["type"])
@@ -25,9 +25,9 @@ class ScrewDialog (AbstractAssemblyDialog):
     def go_to_guide(self, barcode):
         guide = [
             {"text": barcode, "image": None},
-            {"text": "test",  "image": 'assembly_images/test_1.png'},
-            {"text": "troll", "image": 'assembly_images/test_2.png'},
-            {"text": "broll", "image": 'assembly_images/test_3.png'}
+            {"text": "do task 1",  "image": 'assembly_images/test_1.png'},
+            {"text": "do task 2", "image": 'assembly_images/test_2.png'},
+            {"text": "do task 3", "image": 'assembly_images/test_3.png'}
         ]
         title = f"Installing module with barcode {barcode} at detid {self.detid}"
         self.guide = GuideAssembly.GuideAssembly(self, barcode, guide, proceed_callback = partial(self.proceed, barcode), title = title)
@@ -36,7 +36,7 @@ class ScrewDialog (AbstractAssemblyDialog):
 
     def proceed(self, barcode):
         self.save_new_installation(barcode)
-        dialog = PowerDialog.PowerDialog(self.parent, self.detid)
+        dialog = PowerDialog.PowerDialog(self.parent, detid = self.detid)
         dialog.exec()
         self.close()
 

@@ -83,7 +83,7 @@ class AssemblyStatus (DeeBaseWidget):
                     elif module.status.pwr_status is None:
                         self.add_row(QLabel(str(detid)), AssemblyButton("Connect power", self, next_step = "Connect power", detid = detid))
                     else:
-                        ab = AssemblyButton("OK", self, next_step = None)
+                        ab = AssemblyButton("OK", self, next_step = None, detid = detid)
                         ab.setEnabled(False)
                         self.add_row(QLabel(str(detid)), ab) 
 
