@@ -230,9 +230,21 @@ class AssemblyStatus (DeeBaseWidget):
             dialog = PowerDialog(self, **data)
         elif sender.next_step == "Connect optics":
             if "detid" in data:
+                modules = self.modules_in_my_bundle(data["detid"])
+                if not all(m.status.pwr_status is not None for m in modules) or len(self.detids_in_my_bundle(data["detid"], geometry = self.detids)) != len(modules):
+                    QMessageBox.warning(self, "Warning", "Not all modules in this bundle are connected to power, it is recommended to connect power first")
                 data["detids"] = [data.pop("detid")]
+            else:
+                modules = self.modules_from_detids(data["detids"])
             dialog = OpticalDialog(self, **data)
         elif sender.next_step == "Test":
+            if "detid" in data:
+                modules = self.modules_in_my_bundle(data["detid"])
+                if not all(m.status.opt_status is not None for m in modules) or len(self.detids_in_my_bundle(data["detid"], geometry = self.detids)) != len(modules):
+                    QMessageBox.warning(self, "Warning", "Not all modules in this bundle are connected to optical fibers, please connect all fibers before testing")
+                data["detids"] = [data.pop("detid")]
+            else:
+                modules = self.modules_from_detids(data["detids"])
             dialog = TestsDialog(self, **data)
         else:
             dialog = None
