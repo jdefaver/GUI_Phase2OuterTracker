@@ -6,6 +6,7 @@ from sqlalchemy.sql import func
 from markdown import markdown
 
 from local_database_definitions import LogEvent
+from widgets.TakePicture import TakePicture
 import logging
 
 class GuideAssembly(QWidget):
@@ -25,6 +26,7 @@ class GuideAssembly(QWidget):
             self.previous_button.setEnabled(False)
         
         self.add_elog_entry.clicked.connect(self.save_elog)
+        self.add_picture.clicked.connect(self.picture_dialog)
         self.cancel.clicked.connect(parent.close)
 
         if title is not None:
@@ -90,3 +92,12 @@ class GuideAssembly(QWidget):
         text = "### Previous log entries\n\n"
         text += "\n".join(f" * {e.time}: {e.text}" for e in events)
         self.previous_elogs.setHtml(markdown(text))
+
+    def picture_dialog(self):
+        pic_dialog = TakePicture(self, save_callback = self.register_picture)
+        pic_dialog.exec()
+
+    def register_picture(self, qpix):
+        filename = f"test_{self.barcode}.png"
+        print(f"picture saved as {filename}")
+        qpix.save(filename,"PNG")

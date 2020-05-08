@@ -23,6 +23,7 @@ class DeeBuilder(QMainWindow):
             # "guide": GuideAssembly,
             # "setup FC7": SetupFC7,
             # "new issue": NewIssue
+            # "take picture": TakePicture
             }
 
     def __init__(self):
