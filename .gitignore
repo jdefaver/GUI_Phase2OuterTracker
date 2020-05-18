@@ -4,3 +4,6 @@
 *.db
 *_ignore.*
 tags
+test_*.py
+*.wav
+*.png
