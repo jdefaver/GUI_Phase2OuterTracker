@@ -53,15 +53,15 @@ class DeeBuilder(QMainWindow):
         self.setWindowTitle(self.title)
         self.setGeometry(0, 0, 1600, 1080)
 
+        self.status = QLabel("")
+        self.statusBar = QStatusBar()
+        self.statusBar.addWidget(self.status)
+        self.setStatusBar(self.statusBar)
+
         operator_select = SelectOperator(self, self.check_id)
         while self.operator is None:
             if operator_select.exec():
-                self.operator = operator_select.id
-
-        self.statusBar = QStatusBar()
-        self.status = QLabel(f"Operator: {self.operator}")
-        self.statusBar.addWidget(self.status)
-        self.setStatusBar(self.statusBar)
+                self.set_operator(operator_select.id)
 
         quit_gui = QAction('&Exit', self)
         quit_gui.triggered.connect(self.close)
@@ -75,13 +75,16 @@ class DeeBuilder(QMainWindow):
     def switch_operator(self):
         operator_select = SelectOperator(self, self.check_id, can_cancel = True)
         if operator_select.exec():
-            self.operator = operator_select.id
-            self.status.setText(f"Operator: {self.operator}")
+            self.set_operator(operator_select.id)
+
+    def set_operator(self, id):
+        self.operator = id
+        self.status.setText(f"Operator: {self.ids.get(self.operator, 'Undefined')}")
 
 
     def check_id(self, id):
         if id in self.ids:
-            return self.ids[id]
+            return id
         else:
             return None
 
