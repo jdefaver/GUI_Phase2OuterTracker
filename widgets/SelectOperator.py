@@ -18,6 +18,7 @@ class SelectOperator (QDialog):
             cancel = QPushButton("Cancel", self)
             layout.addWidget(cancel)
             cancel.clicked.connect(self.reject)
+        self.label.setFocus()
 
         self.id_chars = []
         self.check_function = check_function

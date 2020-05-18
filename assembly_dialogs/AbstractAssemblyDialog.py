@@ -11,6 +11,7 @@ class AbstractAssemblyDialog(QDialog):
         self.parent = parent
         self.db_session = parent.db_session
         self.geometry = parent.geometry
+        self.operator = parent.operator
         self.assembly_data = assembly_data
 
         self.layout = QStackedLayout()

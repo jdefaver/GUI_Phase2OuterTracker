@@ -1,5 +1,5 @@
 import sys
-import glob
+import datetime
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -41,6 +41,7 @@ class DeeBuilder(QMainWindow):
         aggregation_files = ["AggregationPatternsPosOuter.csv", "AggregationPatternsNegOuter.csv"]
         detids_file = "DetId_modules_list.csv"
         self.geometry = Geometry.from_csv(modules_to_dtc_files, aggregation_files, detids_file)
+        self.operator = None
 
         self.tabs = QTabWidget()
         for title, source in self.tabs_files.items():
@@ -52,11 +53,31 @@ class DeeBuilder(QMainWindow):
         self.setWindowTitle(self.title)
         self.setGeometry(0, 0, 1600, 1080)
 
-        self.operator = None
         operator_select = SelectOperator(self, self.check_id)
         while self.operator is None:
             if operator_select.exec():
                 self.operator = operator_select.id
+
+        self.statusBar = QStatusBar()
+        self.status = QLabel(f"Operator: {self.operator}")
+        self.statusBar.addWidget(self.status)
+        self.setStatusBar(self.statusBar)
+
+        quit_gui = QAction('&Exit', self)
+        quit_gui.triggered.connect(self.close)
+        change_operator = QAction('&Change operator', self)
+        change_operator.triggered.connect(self.switch_operator)
+        menubar = self.menuBar()
+        file_menu = menubar.addMenu('&File')
+        file_menu.addAction(quit_gui)
+        file_menu.addAction(change_operator)
+
+    def switch_operator(self):
+        operator_select = SelectOperator(self, self.check_id, can_cancel = True)
+        if operator_select.exec():
+            self.operator = operator_select.id
+            self.status.setText(f"Operator: {self.operator}")
+
 
     def check_id(self, id):
         if id in self.ids:

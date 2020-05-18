@@ -13,6 +13,7 @@ class DeeBaseWidget(QWidget):
         self.parent = parent
         self.geometry = parent.geometry
         self.db_session = parent.db_session
+        self.operator = parent.operator
 
     def modules_from_detids(self, detids):
         return self.db_session.query(ExternalModule).filter(ExternalModule.status.has(ModuleStatus.detid.in_(detids))).all()
