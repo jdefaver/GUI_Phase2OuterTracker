@@ -6,6 +6,7 @@ from .NewIssue import NewIssue
 from .SetupFC7 import SetupFC7
 from .StartAssembly import StartAssembly
 from .TakePicture import TakePicture
+from .SelectOperator import SelectOperator
 from .DeeBaseWidget import DeeBaseWidget
 
 

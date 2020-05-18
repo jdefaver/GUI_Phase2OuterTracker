@@ -15,6 +15,11 @@ logging.basicConfig(level=logging.WARNING)
 
 class DeeBuilder(QMainWindow):
 
+    ids = {
+        "1111": "Jerome de Favereau",
+        "2222": "Maksym Teklishyn" 
+    }
+
     tabs_files = {
             "browse modules": ModuleBrowser,
             "assembly status": AssemblyStatus,
@@ -46,6 +51,18 @@ class DeeBuilder(QMainWindow):
 
         self.setWindowTitle(self.title)
         self.setGeometry(0, 0, 1600, 1080)
+
+        self.operator = None
+        operator_select = SelectOperator(self, self.check_id)
+        while self.operator is None:
+            if operator_select.exec():
+                self.operator = operator_select.id
+
+    def check_id(self, id):
+        if id in self.ids:
+            return self.ids[id]
+        else:
+            return None
 
 
 if __name__ == "__main__":
