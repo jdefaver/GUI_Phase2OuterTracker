@@ -42,8 +42,6 @@ class ModuleBrowser (DeeBaseWidget):
         self.scanning = False
         self.barcode_chars = []
 
-        self.detids = None
-
         self.fill_table()
 
     def start_scan(self):
@@ -73,7 +71,7 @@ class ModuleBrowser (DeeBaseWidget):
                 text += "\n### Installation status"
                 text += module.status.markdown
                 text += "\n### Geometry data"
-                mgeo = self.detids.loc[module.status.detid]
+                mgeo = self.geometry.loc[module.status.detid]
                 text += MGeometry(mgeo).markdown
             if(module.logs):
                 text += "\n### Log Entries"
@@ -139,8 +137,7 @@ class ModuleBrowser (DeeBaseWidget):
         layer = self.dee_layer.currentText()
         surface = self.dee_surface.currentText()
         vertical = self.dee_vertical.currentText()
-        self.detids =  self.geometry.full_selector(side, int(layer), int(surface), vertical)
-        detids = tuple(self.detids.index.tolist())
+        detids =  self.geometry.full_selector(side, int(layer), int(surface), vertical).index.tolist()
         modules = self.modules_from_detids(detids)
         self.fill_table(modules)
 
