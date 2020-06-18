@@ -4,20 +4,30 @@ from PyQt5.QtGui import *
 from PyQt5.uic import *
 from sqlalchemy.sql import func
 from markdown import markdown
+import yaml
+import os
 
 from local_database_definitions import LogEvent
 from widgets.TakePicture import TakePicture
 import logging
 
 class GuideAssembly(QWidget):
-    def __init__(self, parent, barcode, guide = (), proceed_callback = None, title = None):
+    def __init__(self, parent, barcode, yaml_file, proceed_callback = None):
+        """
+        create an assembly guide widget
+        arguments:
+           barcode  = id of the current module being worked on. Needed for DB operations
+           yaml_file = path to the yaml file with building instructions and the window title. See load_from_yaml for details.
+           proceed_callback = function to be called when the proceed button is clicked
+        """
         super().__init__(parent)
         ui = loadUi('widgets_ui/guide_assembly.ui', self)
-        self.guide = guide
         self.db_session = parent.db_session
+        self.parent = parent
         self.barcode = barcode
+        self.title, self.guide = self.load_from_yaml(yaml_file)
 
-        if len(guide) > 1:
+        if len(self.guide) > 1:
             self.next_button.clicked.connect(self.next_step)
             self.previous_button.clicked.connect(self.previous_step)
             self.previous_button.setEnabled(False)
@@ -29,8 +39,8 @@ class GuideAssembly(QWidget):
         self.add_picture.clicked.connect(self.picture_dialog)
         self.cancel.clicked.connect(parent.close)
 
-        if title is not None:
-            self.assembly_title.setText(title)
+        if self.title:
+            self.assembly_title.setText(self.title)
 
         try: 
             self.proceed_button.clicked.connect(proceed_callback)
@@ -39,7 +49,7 @@ class GuideAssembly(QWidget):
 
         self.show_elog_history()
 
-        for step in guide:
+        for step in self.guide:
             tw = QTextBrowser(self)
             if "text" in step:
                 tw.setText(step["text"])
@@ -101,3 +111,29 @@ class GuideAssembly(QWidget):
         filename = f"test_{self.barcode}.png"
         print(f"picture saved as {filename}")
         qpix.save(filename,"PNG")
+
+    def load_from_yaml(self, yaml_file):
+        """
+        get assembly guide and title from yaml. format:
+          title : "window title"
+          image_path : "/absolute/path/of/image/folder"
+          steps:
+            - text: "step 1 instructions text"
+              image: "image file name"
+            - text: "etc."
+            - image: "another file name"
+        all texts are templates that can use variables defined in this object's parent window (for instance OpticalDialog)
+        """
+        guide = []
+        with open(yaml_file, 'r') as yfile:
+            data = yaml.load(yfile, Loader=yaml.FullLoader)
+            path = data.get('image_path', '')
+            title = data.get('title', '').format(**vars(self.parent), barcode=self.barcode)
+            for step in data["steps"]:
+                if 'image' in step:
+                    step['image'] = os.path.join(path, step['image'])
+                if 'text' in step:
+                    step['text'] = step['text'].format(**vars(self.parent), barcode=self.barcode)
+                guide.append(step)
+        return title, guide
+

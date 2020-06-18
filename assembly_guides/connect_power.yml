@@ -1,0 +1,11 @@
+image_path: /home/jdf/temp/GUI_Phase2OuterTracker/assembly_images
+title: "Connecting module with barcode {barcode} to power at {pwr_services_channel}"
+steps:
+        - text: "connect power in channel {pwr_services_channel}"
+          image: 'test_1.png'
+        - text: "test 1"
+        - text: "test 2"
+          image: 'test_2.png'
+        - text: "test 3"
+          image: 'test_3.png'
+        

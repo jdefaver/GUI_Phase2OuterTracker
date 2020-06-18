@@ -24,16 +24,14 @@ class OpticalDialog (AbstractAssemblyDialog):
         self.opt_channel = self.geo_data.iloc[0]["opt_services_channel"]
 
     def go_to_guide(self, barcode):
+        """
+        create guide window and switch there
+        """
         module = self.db_session.query(ExternalModule).filter(ExternalModule.barcode == barcode).first()
+        self.barcode = barcode
+        guide = GuideAssembly.GuideAssembly(self, barcode, "assembly_guides/connect_optics.yml", proceed_callback = partial(self.proceed_next, module))
+
         self.modules = [m for m in self.modules if m.barcode != barcode]
-        guide = [
-            {"text": f"connect optics using mfb {self.mfb} in channel {self.opt_channel}", "image": 'assembly_images/test_1.png'},
-            {"text": "test 1", "image": None},
-            {"text": "test 2", "image": 'assembly_images/test_2.png'},
-            {"text": "test 3", "image": 'assembly_images/test_3.png'}
-        ]
-        title = f"Connecting module with barcode {barcode} to optics at {self.opt_channel}"
-        guide = GuideAssembly.GuideAssembly(self, barcode, guide, proceed_callback = partial(self.proceed_next, module), title = title)
         if not self.modules:
             guide.proceed_button.setText("Save and finish")
         self.layout.addWidget(guide)

@@ -23,14 +23,7 @@ class ScrewDialog (AbstractAssemblyDialog):
         self.layout.addWidget(self.pick)
 
     def go_to_guide(self, barcode):
-        guide = [
-            {"text": barcode, "image": None},
-            {"text": "do task 1",  "image": 'assembly_images/test_1.png'},
-            {"text": "do task 2", "image": 'assembly_images/test_2.png'},
-            {"text": "do task 3", "image": 'assembly_images/test_3.png'}
-        ]
-        title = f"Installing module with barcode {barcode} at detid {self.detid}"
-        self.guide = GuideAssembly.GuideAssembly(self, barcode, guide, proceed_callback = partial(self.proceed, barcode), title = title)
+        self.guide = GuideAssembly.GuideAssembly(self, barcode, "assembly_guides/screw_module.yml", proceed_callback = partial(self.proceed, barcode))
         self.layout.addWidget(self.guide)
         self.layout.setCurrentIndex(1)
 

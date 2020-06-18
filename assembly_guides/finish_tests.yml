@@ -1,0 +1,5 @@
+image_path: "/home/jdf/temp/GUI_Phase2OuterTracker/assembly_images"
+title: "Cleaning after tests of modules in bundle {bundle}"
+steps:
+        - text: "Disconnect all optics for bundle {bundle}"
+          image: 'test_2.png'

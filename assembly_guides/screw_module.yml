@@ -1,0 +1,10 @@
+image_path: /home/jdf/temp/GUI_Phase2OuterTracker/assembly_images
+title: "Installing module with barcode {barcode} at detid {detid}"
+steps:
+        - text: "{barcode}"
+        - text: "do task 1" 
+          image: 'test_1.png'
+        - text: "do task 2" 
+          image: 'test_2.png'
+        - text: "do task 3" 
+          image: 'test_3.png'

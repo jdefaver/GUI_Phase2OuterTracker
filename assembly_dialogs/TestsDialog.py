@@ -31,19 +31,11 @@ class TestsDialog (AbstractAssemblyDialog):
         self.layout.insertWidget(1, self.tests)
 
     def add_instructions_before(self):
-        guide = [
-            {"text": f"Connect all optics for bundle {self.bundle}", "image": 'assembly_images/test_1.png'},
-        ]
-        title = f"Preparing to test modules in bundle {self.bundle}"
-        self.guide_before = GuideAssembly.GuideAssembly(self, "", guide, proceed_callback = self.go_to_tests, title = title)
+        self.guide_before = GuideAssembly.GuideAssembly(self, "", "prepare_tests.yml", proceed_callback = self.go_to_tests)
         self.layout.insertWidget(0, self.guide_before)
 
     def add_instructions_after(self):
-        guide = [
-            {"text": f"Disconnect all optics for bundle {self.bundle}", "image": 'assembly_images/test_2.png'},
-        ]
-        title = f"Cleaning after tests of modules in bundle {self.bundle}"
-        self.guide_before = GuideAssembly.GuideAssembly(self, "", guide, proceed_callback = self.finish, title = title)
+        self.guide_before = GuideAssembly.GuideAssembly(self, "", "finish_tests.yml", proceed_callback = self.finish)
         self.layout.insertWidget(2, self.guide_before)
 
     def go_to_tests(self):

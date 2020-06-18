@@ -1,0 +1,16 @@
+image_path: /home/jdf/temp/GUI_Phase2OuterTracker/assembly_images
+title: "Connecting module with barcode {barcode} to optics at {opt_channel} loaded from yaml file"
+steps:
+  - text: "fake test using mfb: {mfb}
+
+     this is another line
+
+
+     and yet another
+     "
+
+  - text: "fake test using optical_channel {opt_channel}"
+    image: test_2.png
+
+  - text: "fake test using nothing"
+    image: test_3.png

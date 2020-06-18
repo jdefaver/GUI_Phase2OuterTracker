@@ -1,0 +1,5 @@
+image_path: "/home/jdf/temp/GUI_Phase2OuterTracker/assembly_images"
+title: "Preparing to test modules in bundle {bundle}"
+steps:
+        - text: "Connect all optics for bundle {bundle}"
+          image: 'test_1.png'
